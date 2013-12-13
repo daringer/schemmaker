@@ -435,7 +435,6 @@ class Deterministic(BaseOptimizer):
             raise OptimizerBlockDifferenceError(field.get_blocks(), org_blocks, \
                 [blk for blk in org_blocks if blk not in field])        
         
-      
         log("horizontal alignment - ")
         # mirror/rotate to get best horizontal alignment
         field = self.align_horizontal(field)
@@ -446,12 +445,9 @@ class Deterministic(BaseOptimizer):
        
         field.optimize_size()
         log("routing - ")
-        #field.cost()
         field.route()
         
         log("finished!\n")
-        if __debug__:
-            print field.show_occ()
         
         self.field = field
         return field
