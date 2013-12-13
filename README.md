@@ -3,6 +3,8 @@ schemmaker
 
 scheMMaker draws fancy schematics out of netlists!
 
+* examples/pdfs/ contains some generated circuits as pdfs, watch how fancy they are!
+
 * inside examples/ run ./run_examples.sh to let scheMMaker do some work for the
   vhdl-netlists inside examples/
 
