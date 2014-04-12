@@ -9,12 +9,12 @@ from itertools import permutations
 
 from multiprocessing import Process, Queue, Pool
 
-from base_optimizer import BaseOptimizer
+from base_optimizer import BaseRandomOptimizer
 
 
-class GeneticAlgorithm(BaseOptimizer):
+class GeneticAlgorithm(BaseRandomOptimizer):
     def __init__(self, field):
-        BaseOptimizer.__init__(self, field)
+        BaseRandomOptimizer.__init__(self, field)
 
         self.max_pop = 14
         self.keep_best = 3

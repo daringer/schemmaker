@@ -1,7 +1,8 @@
 #!/bin/bash 
 
-export PYTHONPATH=$PYTHONPATH:..
+PY="python2"
+export PYTHONPATH=$PYTHONPATH:../src/
 for fn in *.vhdl
 do
-	python ../schemmaker.py ${fn} pdfs/${fn}.pdf
+	$PY ../src/schemmaker.py ${fn} pdfs/${fn}.pdf
 done

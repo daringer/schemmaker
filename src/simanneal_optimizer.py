@@ -9,15 +9,15 @@ from itertools import permutations
 
 from multiprocessing import Process, Queue, Pool
 
-from base_optimizer import BaseOptimizer
+from base_optimizer import BaseRandomOptimizer
 
 
-class SimulatedAnnealing(BaseOptimizer):
+class SimulatedAnnealing(BaseRandomOptimizer):
     reduce_temp = 0.8
     step_reduce_temp = 3000
     
     def __init__(self, field):
-        BaseOptimizer.__init__(self, field)
+        BaseRandomOptimizer.__init__(self, field)
 
         # initial temp defined by 1st cost val
         self.temp = field.cost() / 100.0
