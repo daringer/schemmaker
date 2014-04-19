@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
-from field import Field, FieldException
-from block import Block
+
 from random import choice, random, randint
-from print_block import bprint
+
 from math import exp
 from time import time
 from itertools import permutations
 
 from multiprocessing import Process, Queue, Pool
 
+
 from base_optimizer import BaseRandomOptimizer
 
+from print_block import bprint
+from field import Field, FieldException
+from block import Block
 
 class GeneticAlgorithm(BaseRandomOptimizer):
     def __init__(self, field):

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from scipy import *
-from print_block import *
-from block import Block
 from math import sqrt, factorial, pow
 from random import choice, shuffle
 import itertools
 import heapq
 import copy
+
+from block import Block
+from print_block import *
 
 """
 -> representing a field of the dimension nx*ny
@@ -73,6 +74,14 @@ class FieldBlockBadOrientation(FieldBlockException):
 class FieldBlockCouldNotBePlaced(FieldBlockPosException):
     pass
 
+
+class FieldNode:
+    def __init__(self, name, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.names = name and [name]
+    
+
 class Field:
     def __init__(self, cid, nx, ny, raw_blocks=None):
         # circuit id
@@ -110,20 +119,21 @@ class Field:
         if raw_blocks is not None:
             self.initial_placement(raw_blocks)
         
-        self.clean_up()
-        
     ############################################################################
     ### Cleanup/copy and clear Field
     ############################################################################        
-    def clean_up(self):
+    def clear_wires(self):
         self.wires = []
 
     def clear(self):
         blks = self.get_blocks()[:]
         for blk in blks:
             self.remove_block(blk)
+            
+        self.clear_wires()
 
     def copy(self):
+        # copy only blocks - no wires!?
         out = Field(self.circuit_id, self.nx, self.ny)
         for k, v in self.block_pos.items():
             out.add_block(k.copy(), copy.deepcopy(v))
@@ -210,7 +220,7 @@ class Field:
         #            yield (endpos[0] - add_x, endpos[1] - add_y)
     
     def iter_area_block(self, block):
-        if not self.validate_block(block):
+        if not block in self:
             raise FieldBlockNotFound(block)
         
         pos = self.block_pos[block]
@@ -222,9 +232,15 @@ class Field:
     ############################################################################
     def get_blocks(self):
         return self.block_pos.keys()
+    
+    def get_nets(self):
+        out = set()
+        for blk in self.get_blocks():
+            out.update(blk.conns.values())
+        return out
    
     def get_block_pos(self, block):
-        if not self.validate_block(block):
+        if not block in self:
             raise FieldBlockNotFound(block)
         return self.block_pos[block]    
     
@@ -263,7 +279,7 @@ class Field:
         return self.__remove_block(self.xy_pos_block[pos])
 
     def remove_block(self, block):
-        if not self.validate_block(block):
+        if not block in self:
             raise FieldBlockNotFound(block)
         return self.__remove_block(block)
 
@@ -378,9 +394,6 @@ class Field:
         x, y = pos
         return (x >= 0 and x <= self.nx) and \
                (y >= 0 and y <= self.ny)
-    
-    def validate_block(self, block):
-        return block in self.block_pos.keys()
     
     def is_occ(self, pos):
         return pos in self.xy_pos_block
@@ -527,15 +540,19 @@ class Field:
     ############################################################################    
     
     def cost(self, simple=False):
-        from field_cost import FieldCost
-        self.field_cost = FieldCost(self)
-        return self.field_cost.cost(simple)
+        #from field_cost import FieldCost
+        #self.field_cost = FieldCost(self)
+        #return self.field_cost.cost(simple)
+        return 123;
     
     def route(self):
-        from field_cost import FieldCost
-        self.field_cost = FieldCost(self)
-        return self.field_cost.calc_routing_cost(scaling=4)
-    
+        #from field_cost import FieldCost
+        #self.field_cost = FieldCost(self)
+        #return self.field_cost.calc_routing_cost(scaling=4)
+        from routing import Routing
+        r = Routing(self)
+        return r.route(4)
+        
     def optimize_size(self):
         for x in xrange(0, self.nx - 1, 2):
             self.remove_col(x)

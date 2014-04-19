@@ -29,7 +29,8 @@ class Block:
     def __init__(self, b_type, con_list=None, name=None, groups=None):
         self.type = b_type
         self.name = name
-        self.groups = groups       
+        self.groups = groups  
+        self.size = (2, 2)
         
         self.conns = {}
         if con_list is not None:

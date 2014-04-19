@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-from field import Field
-from block import Block
 from random import choice, random, randint
-from print_block import bprint
 from math import exp
 from time import time
 from itertools import permutations
@@ -11,6 +8,9 @@ from multiprocessing import Process, Queue, Pool
 
 from base_optimizer import BaseRandomOptimizer
 
+from print_block import bprint
+from field import Field
+from block import Block
 
 class SimulatedAnnealing(BaseRandomOptimizer):
     reduce_temp = 0.8
@@ -107,7 +107,7 @@ class SimulatedAnnealing(BaseRandomOptimizer):
         # calc cost of new field
         start_time = time()
         #self.last_new_cost = new_cost = self.field.cost()
-        new_field.clean_up()
+        new_field.clear_wires()
         self.last_new_cost = new_cost = new_field.cost()
         #print new_cost
         end_time = time()
