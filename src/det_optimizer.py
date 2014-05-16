@@ -11,6 +11,7 @@ from base_optimizer import BaseOptimizer, OptimizerError
 from field import Field
 from block import Block
 from print_block import bprint
+from routing import Routing
 
 class OptimizerNoColumnOrderFound(OptimizerError):
     def __init__(self, msg):
@@ -71,21 +72,23 @@ class Deterministic(BaseOptimizer):
     def columnize(self, field, blks, net_blks):
         # only blocks with "vdd", each one spans one "column"
         vdd_blks = net_blks["vdd"]
-        vdd_blks.sort(key=lambda o: o.name)
-
+        vdd_blks.sort(key=lambda o: o[0].name)
+        
         # holds the results in form of a dict, with the parent-block as key -> holding a list of children:
         # the "None" key means there is no parent, thus block is a vdd-block
         # [child1, child2, ..., childN], if key(block) is ground block, replace list with "gnd"
         result = {None: vdd_blks[:]}
         
         # maintain queue of next blocks for each "column", start with "vdd"-block
-        queue = dict( (k, [k.set_pin_orientation("vdd", 0) and k]) for k in vdd_blks)
+        #queue = dict( (k, [k.set_pin_orientation("vdd", 0) and k]) for k in vdd_blks)
+        queue = dict( (k, [k]) for k in vdd_blks)
+        
         # check if all vdd blocks can be rotated, so that "vdd" points north
-        if any(not x for x in queue.values()):
-            raise OptimizerCannotSetPinOrientation("vdd", 0, [x for x in queue.values() if not x])
+        #if any(not x for x in queue.values()):
+        #    raise OptimizerCannotSetPinOrientation("vdd", 0, [x for x in queue.values() if not x])
         
         # contains already added blocks                        
-        added = [k for k in vdd_blks]
+        added = [k[0] for k in vdd_blks]
 
         # iterator to cycle through vdd blocks (keys of queue) endlessly
         q_iter = cycle(queue.keys())
@@ -93,35 +96,80 @@ class Deterministic(BaseOptimizer):
         # keep adding blocks to result/added until all are added
         # cycle through columns to only add one block at once in each column
         while len(added) != len(blks):
+            #print "---------------------------------------------------------------------"
             
+            #print "remain: " , len(blks)-len(added)
+            #print "----------------------"
+            s = set(blks) - set(added)
+            #for a in s:
+            #    print s
+            #print "----------------------"
+            #print "----------------------"
+                                    
             # get active block and queue
             q_blk = q_iter.next()
             active_q = queue[q_blk]
             
+            #print "################"            
+            #print q_blk
+            #for k, v in queue.items():
+            #    print len(v)
+            #    print v
+            #print "################"
+            
+            if sum([len(q) for q in queue.values()]) == 0:
+                import sys
+                print "hello again"
+                print len(blks), len(added)
+                print "------------------"
+                print "\n".join(str(x) for x in set(blks))
+                print "------------------"
+                print "\n".join(str(x) for x in set(added))
+                print "------------------"
+                sys.exit(1)
+            
             # only add one block
             if len(active_q) > 0:
-                blk = active_q.pop()
-                net = blk.get_name_from_direction(2)                
+                
+                tmp = active_q.pop()
+                blk, pin = tmp
+                
+                pins = blk.get_pins_from_direction(2)
+                assert len(pins) < 2 and len(pins) != 0
                 
                 # for all candidates with the appropriate net turned north
-                for b in sorted(net_blks[net], key=lambda o: o.name):
-                    if b not in added and b.set_pin_orientation(net, 0):
-                        south_net = b.get_name_from_direction(2)
+                for c_blk, c_pin in sorted(net_blks[net], key=lambda o: o[0].name):
+                    
+                    if c_blk not in added and c_blk.set_rot_from_pin_dir(c_pin, 0):
+                        pins = c_blk.get_pins_from_direction(2)
+                        
+                        assert len(pins) < 2 and len(pins) != 0
+                        south_net = pins[0]
                         # ignore if vdd
+                      
                         if south_net == "vdd":
                             continue
                         
                         # maintain result data
-                        result.setdefault(blk, []).append(b)
-                        added.append(b)
+                        result.setdefault(c_blk, []).append(c_blk)
+                        added.append(c_blk)
                         
                         # either add as ground block
                         if south_net == "gnd":
-                            result[b] = "gnd"
+                            result[c_blk] = "gnd"
                         # or regular
                         else:
-                            result[b] = []
-                            active_q.append(b)
+                            result[c_blk] = []
+                            active_q.append((c_blk, c_pin))
+                            
+                        if net == "vbias1":
+                            #print b
+                            #b.rotate(1)
+                            #print b
+                            #import sys
+                            print "this is the end..."
+                            #sys.exit(1)
+                            
                         
             # catch cornercase: only vdd block without children            
             else:
@@ -132,6 +180,7 @@ class Deterministic(BaseOptimizer):
         stack = [ ((-1, 0), blk) for blk in result[None] ]
         # stack-based means depth-first 
         while len(stack) > 0:
+            #print len(stack) 
             (col, row), blk = stack.pop()
             
             # reset and columns set, if new column starts
@@ -161,7 +210,6 @@ class Deterministic(BaseOptimizer):
         _field.clear()
         best_p, best_c = None, None
         for i, p in enumerate(permutations(field.iter_cols())):
-
             # hard break after 1000 tries
             if i==1000:
                 break
@@ -169,26 +217,33 @@ class Deterministic(BaseOptimizer):
             autofail = False
             for x, cols in enumerate(p):
                 for y, blk in cols:
-                    ret = _field[x*2, y] = blk
+                    _field[x*2, y] = blk
                     
                     # EVIL HACK FOR BIAS-CIRCUIT # TODO / FIXME !!!!
-                    if blk.groups[0] == 0 and x in [0, 1]:
-                        autofail = True
-                        break
-                    
-                    elif blk.groups[0] == 1 and blk.type == "i_constant" and x != 1:
-                        autofail = True
-                        break
+                    #if blk.groups[0] == 0 and x in [0, 1]:
+                    #    autofail = True
+                    #    break
+                    #
+                    #elif blk.groups[0] == 1 and blk.type == "i_constant" and x != 1:
+                    #    autofail = True
+                    #    break
       
-                if autofail:
-                    break
+                #if autofail:
+                #    break
       
-            if autofail:
-                autofail = False
-                _field.clear()
-                continue
+            #if autofail:
+            #    autofail = False
+            #    _field.clear()
+            #    continue
+            
 
-            simple_costs = _field.cost(simple=True)
+            #print "OSIDJIFDIOJSDFOIJDFSOIJDSFOISDFJ"
+            r = Routing(_field)
+            simple_costs = r.calc_simple_routing()
+            #print simple_costs
+            #print "#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"            
+            #print "#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"            
+            #print "#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"            
             if best_p is None or best_c > simple_costs:
                 best_p = p[:]
                 best_c = simple_costs
@@ -220,12 +275,18 @@ class Deterministic(BaseOptimizer):
             for x, blk in cols:
                 # extract blk-vb props
                 vb = None
-                _f = blk.get_name_from_direction
+                _f = blk.get_pins_from_direction
+                    
                 left, right = _f(3), _f(1)
-                if left and left.startswith("vbias"):
-                    vb = int(left[-1])
-                elif right and right.startswith("vbias"):
-                    vb = int(right[-1])
+                if len(left) > 0:
+                    left = left[0]
+                if len(right) > 0:
+                    right = right[0]
+                    
+                if left and left.net.startswith("vbias"):
+                    vb = int(left.net[-1])
+                elif right and right.net.startswith("vbias"):
+                    vb = int(right.net[-1])
                 
                 # blk has vb
                 if vb is not None:
@@ -244,10 +305,10 @@ class Deterministic(BaseOptimizer):
                         
                 # regular non-vb blk
                 else:
-                    if left and left.startswith("inp"):
+                    if left and left.net.startswith("inp"):
                         inp_line[x] = blk
                         need_inp_split = True
-                    elif right and right.startswith("inp"):
+                    elif right and right.net.startswith("inp"):
                         inp_line[x] = blk
                         need_inp_split = True
                     else:
@@ -369,29 +430,30 @@ class Deterministic(BaseOptimizer):
         left = {}
         max_x = max(x for x,y in field.iter_xy_pos_block())
         for (x, y), block in field.iter_xy_pos_block():
-            _f = block.get_name_from_direction
-            net = _f(3) or _f(1)
-            if not net:
+            _f = block.get_pins_from_direction
+            pins = _f(3) or _f(1)
+            if not pins:
                 continue
+            pin = pins[0]
             
-            _f = block.set_pin_orientation
+            _f = block.set_rot_from_pin_dir
             # handle input block, so they show in opposite dirs
-            if net.startswith("inp"):
+            if pin.net.startswith("inp"):
                 if not inp_found:
-                    ret = _f(net, 3, only_mirror=True)
+                    ret = _f(pin.net, 3, only_mirror=True)
                     inp_found = True
                 else:
-                    ret = _f(net, 1, only_mirror=True)
+                    ret = _f(pin.net, 1, only_mirror=True)
             # blocks inside the rightmost col: TURN LEFT
             elif x == max_x:
-                ret = _f(net, 3, only_mirror=True)
+                ret = _f(pin.net, 3, only_mirror=True)
             # net seen first or found straight over block: TURN RIGHT 
-            elif net not in left or (net in left and left[net] == x):
-                left[net] = x
-                ret = _f(net, 1, only_mirror=True)
+            elif pin.net not in left or (pin.net in left and left[pin.net] == x):
+                left[pin.net] = x
+                ret = _f(pin.net, 1, only_mirror=True)
             # net already seen : TURN LEFT
             else:
-                ret = _f(net, 3, only_mirror=True)
+                ret = _f(pin.net, 3, only_mirror=True)
                 
             if not ret:
                 raise OptimizerHorizontalAlignError(blk)        
@@ -405,8 +467,8 @@ class Deterministic(BaseOptimizer):
         org_blocks = blks[:]
         
         for blk in blks:
-            for net in blk.conns.values():
-                net_blks.setdefault(net, []).append(blk)                
+            for pin in blk.pins.values():
+                net_blks.setdefault(pin.net, []).append((blk, pin))                        
         
         field = self.field 
         field.clear()
@@ -425,7 +487,7 @@ class Deterministic(BaseOptimizer):
         if org_block_count != len(field):
             raise OptimizerBlockDifferenceError(field.get_blocks(), org_blocks, \
                 [blk for blk in org_blocks if blk not in field])        
-        
+         
         log("expanding rows - ")
         # expand rows to main/vb/special
         field = self.expand_rows(field)
@@ -445,6 +507,8 @@ class Deterministic(BaseOptimizer):
        
         field.optimize_size()
         log("routing - ")
+        
+        field.show_occ()
         field.route()
         
         log("finished!\n")

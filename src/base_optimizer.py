@@ -175,3 +175,12 @@ class BaseRandomOptimizer(BaseOptimizer):
                         
         return field.move(block, (new_x, new_y))
     
+
+
+class FakeOptimizer(BaseOptimizer):
+    def __init__(self, field):
+        BaseOptimizer.__init__(self, field)
+        
+    def run(self):
+        return self.field
+        

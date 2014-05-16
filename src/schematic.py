@@ -8,7 +8,7 @@ from field import Field, FieldException
 from block import Block
 from det_optimizer import Deterministic
 from genetic_optimizer import GeneticAlgorithm
-from base_optimizer import OptimizerError
+from base_optimizer import OptimizerError, FakeOptimizer
 
 class Schematic:
     def __init__(self, canvas_backend_cls=None):
@@ -156,19 +156,21 @@ class Schematic:
             # max field size is critical...
             # DETERMINISTIC -> can be biiig, makes no difference
             # EVOLUTIONARY -> small approx 14x14 for 4block+bias 
-            
+            print "\n".join(str(x) for x in self.cur_circ_raw)
             field = Field(self.cur_circ, xsize, ysize, self.cur_circ_raw)
             
-            if optimizer == "deterministic":
-                o = Deterministic(field)
-            elif optimizer == "evolution":
-                o = GeneticAlgorithm(field)
-            else:
-                print "[ERR] Unknown optimizer!"
-                sys.exit(1)
-                
+            #if optimizer == "deterministic":
+            #    o = Deterministic(field)
+            #elif optimizer == "evolution":
+            #    o = GeneticAlgorithm(field)
+            #else:
+            #    print "[ERR] Unknown optimizer!"
+            #    sys.exit(1)
+            
+            o = FakeOptimizer(field)
+            
             field = o.run() 
-            field.spec_data = specdata            
+            #field.spec_data = specdata            
             field.optimize_size()
             self.plot(field)
             return True
@@ -176,7 +178,6 @@ class Schematic:
         except (OptimizerError, FieldException) as e:
             print "[-] failed to create schematic for circ {}".format(self.cur_circ)
             print e.message
-            print e.tb
             return False
             
         return None # never reached

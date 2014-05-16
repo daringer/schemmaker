@@ -136,7 +136,7 @@ class Field:
         # copy only blocks - no wires!?
         out = Field(self.circuit_id, self.nx, self.ny)
         for k, v in self.block_pos.items():
-            out.add_block(k.copy(), copy.deepcopy(v))
+            out.add_block(k.copy(out), v) #copy.deepcopy(v))
         return out
 
     def shuffle_copy(self):
@@ -449,16 +449,7 @@ class Field:
             self.place_block(b)
                 
     def place_block(self, blk):
-        if blk.has_vdd:
-            ypos = 0
-            if not blk.set_pin_orientation("vdd", 0):
-                raise FieldBlockBadOrientation(blk)
-        elif blk.has_gnd:
-            ypos = self.ny - 2
-            if not blk.set_pin_orientation("gnd", 2):
-                raise FieldBlockBadOrientation(blk)            
-        else:
-            ypos = choice(range(2, self.ny-4+1, 2))
+        ypos = choice(range(2, self.ny-4+1, 2))
         
         if not self.add_in_row(ypos, blk):
             raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
@@ -539,20 +530,6 @@ class Field:
     ### Wrappers and misc
     ############################################################################    
     
-    def cost(self, simple=False):
-        #from field_cost import FieldCost
-        #self.field_cost = FieldCost(self)
-        #return self.field_cost.cost(simple)
-        return 123;
-    
-    def route(self):
-        #from field_cost import FieldCost
-        #self.field_cost = FieldCost(self)
-        #return self.field_cost.calc_routing_cost(scaling=4)
-        from routing import Routing
-        r = Routing(self)
-        return r.route(4)
-        
     def optimize_size(self):
         for x in xrange(0, self.nx - 1, 2):
             self.remove_col(x)
