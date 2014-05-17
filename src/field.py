@@ -102,6 +102,7 @@ class Field:
         # position-to-block map (all occupied pos as keys)
         self.xy2block = {}
         self.yx2block = {}
+        # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
         # wiring related datastructures
         self.wires = []
@@ -346,7 +347,6 @@ class Field:
         Remove (empty) column from field.
         moving all blocks right of it to the left by width
         """
-        
         move_from_x = which_x + 2
         if not self.is_col_empty(which_x, width):
             raise FieldColumnNotEmpty(which_x)
@@ -485,7 +485,7 @@ class Field:
     ### Block operations
     ############################################################################    
     def rotate(self, block, i):
-        """Rotate block (counter-clock-wise) by 'i'"""
+        """Rotate block (clock-wise) by 'i'"""
         # TODO: handle changed size due to rotation (NxM -> MxN)
         return block.rotate(i)
 

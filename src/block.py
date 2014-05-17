@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from pin import Pin
+
 import copy
 
 """
@@ -9,90 +11,20 @@ import copy
            (0)
         ____o____
        |    |    |
-  (3)  |o___|____|o (1)  <-- not inverted
+  (1)  |o___|____|o (3) 
        |    |    |
        |____|____|
             o
            (2)
-        
 """
-
 
 class BlockException(Exception):
     def __init__(self, msg):
-        self.message += "[EXC] " + self.__class__.__name__ + ": " + msg
-          
-class PinNameDoesNotExist(BlockException):
+        self.message += "[EXC] {}: {}".\
+            format(self.__class__.__name__, str(msg))
+        
+class BlockNoFieldAssigned(BlockException):
     pass
-
-class XYPoint:
-    def __init__(self, pos_or_x=None, y=None):
-        self.__xy = (0, 0)
-        self.x = property(lambda s: s.__xy[0], self.__setterX)
-        self.y = property(lambda s: s.__xy[1], self.__setterY)
-        self.pos = property(lambda s: s.__xy, self.__setterXY)
-        
-        if isinstance(pos_or_x, (tuple, list)) and len(pos_or_x) == 2:
-            self.__xy = self.__valid_pos(pos_or_x)
-        elif y is not None:
-            self.__xy = self.__valid_pos((pos_or_x, y))
-        
-    def copy(self):
-        return XYPoint(self.__xy)
- 
-    def __setterX(self, val):
-        assert val is not None
-        self.__xy = self.__valid_pos((val, self.__xy[1]))
-        
-    def __setterY(self, val):
-        assert val is not None
-        self.__xy = self.__valid_pos((self.__xy[0], val))
-        
-    def __setterXY(self, val):
-        assert val is not None
-        self.__xy = self.__valid_pos(val)
-            
-    def __valid_pos(self, pos):
-        """Either enforce int() or float()"""
-        #x = float(pos[0])
-        #y = float(pos[1])
-        x = int(pos[0])
-        y = int(pos[1])
-        return (x, y)
-
-
-class Pos(XYPoint):
-    pass
-    
-class Size(XYPoint):
-    pass
-
-class Area(XYPoint):
-    def __init__(self, from_pos, to_pos):
-        pass
-
-
-class Pin:
-    def __init__(self, parent, net_name, pos, horizontal=False, vertical=False):
-        self.net = net_name
-        self.horizontal = horizontal
-        self.vertical = vertical
-        
-        self.supply = net_name.lower() == "vdd"
-        self.gnd = net_name.lower() in ["gnd", "vss"]
-        self.biased = net_name.startswith("vbias") and horizontal
-        
-        self.block = parent
-        # relative position (inside block)
-        self.pos = pos        
-        # absolute position 
-        self.blk_pos = property(lambda s: (s.block.pos[0] + s.pos[0], s.block.pos[1] + s.pos[1]))
-        
-    def copy(self, parent):
-        return Pin(self, self.net, self.pos, self.horizontal, self.vertical)
-
-    def __repr__(self):
-        return "({0[0]},{0[1]} - {1})".format(self.pos, self.net)
 
 
 class Block:
@@ -118,7 +50,7 @@ class Block:
         self.mirrored = False
         
         # rotation: 0=0°, 1=-90°, 2=-180°, 3=-270°
-        # rotation is clock-wise!
+        # rotation is clock-wise! TODO: CHANGE ALL OCCURS TO COUNTER-CLOCKWISE!!!
         self.rotation = 0
         self.__rot_origin = (self.size[0]/2, self.size[1]/2)
         
@@ -133,38 +65,27 @@ class Block:
                 self.pins[(1, 2)] = Pin(self, pins[1], (1, 2), False, True)
 
         self.has_vdd = any(p.supply for p in self.pins.values())
-        for i in xrange(3):
-            if any(self.get_pin_direction(p) != 0 and p.vertical \
-                   for p in self.pins.values() if p.supply):
-                self.rotate(1)
-            else:
-                break
-            
         self.has_gnd = any(p.gnd for p in self.pins.values())
-        for i in xrange(3):
-            if any(self.get_pin_direction(p) != 2 and p.vertical \
-                   for p in self.pins.values() if p.gnd):
-                self.rotate(1)
-            else:
-                break    
-            
         self.is_biased = any(p.biased for p in self.pins.values())
-        for i in xrange(3):
-            if any(self.get_pin_direction(p) not in [1, 3] and p.horizontal \
-                   for p in self.pins.values() if p.biased):
-                self.rotate(1)
-            else:
-                break
+       
+        # TODOOOOO!!!
+        #rot, mir = self.get_prefered_orientation()
+        #self.rotate((self.rotation - rot) % 4)
+        #self.mirror(set_to=mir)
+            
+    def __contains__(self, pin):
+        return pin in self.pins.values()
         
-        
-    def __pos_getter(self):    
-        # never call this before assigning block to a field
-        assert self.field
+    def __pos_getter(self):
+        """(internal) getter for .pos - ask for my position at parent"""
+        if self.field is None:
+            raise BlockNoFieldAssigned("cannot ask for global position")
         # if this rings, block is not owned by field or vice-versa                
         assert self in self.field
         return self.field[self]
     
     def copy(self, parent):
+        """Return real block copy"""
         out = Block(self.type)
         out.pins = dict((k, v.copy(out)) for k, v in self.pins.items())
         out.mirrored = self.mirrored
@@ -181,12 +102,10 @@ class Block:
         out.field = parent or self
         
         return out
-        
-    #def is_rot(self):
-    #    return True if self.rotation != 0 else False
     
+    # TODO: counter-clock-wise
     def __rot_pos(self, pos, times, origin=(0,0)):
-        """clock-wise"""
+        """(internal) rotate 'pos' 'times' clock-wise around 'origin'"""
         new_pos = pos
         # change idx from counter-clock-wise to clock-wise        
         for i in xrange(4 - times):
@@ -198,8 +117,9 @@ class Block:
             new_pos = (r_x + origin[0], r_y + origin[1])
         return new_pos
       
+    # TODO: change all to counter-clock-wise
     def rotate(self, count, force=False):
-        """rotate 'count' times CLOCK-WISE"""
+        """rotate block clock-wise 'count' times"""
         new_pins = {}
         rot = count % 4
         if rot == 0:
@@ -226,6 +146,7 @@ class Block:
         return True
 
     def mirror_v(self):
+        """mirror block vertically"""
         targ_rot = (self.rotation + 2) % 4
         targ_mir = not self.mirrored
         
@@ -235,6 +156,10 @@ class Block:
         return self.rotate(2) and self.mirror()
         
     def mirror(self, set_to=None):
+        """
+        mirror block horizontally, 
+        or set 'set_to' mirror property and apply
+        """
         if set_to is None:
             self.mirrored = not self.mirrored
         else:
@@ -257,35 +182,23 @@ class Block:
                 continue
         return True
 
+    # also derivation candidate!
     def is_orientation_legal(self, newrot, newmir):
+        """Is the given 'newrot' and 'newmir' orientation legal"""
         if self.has_vdd and newrot != 0:
             return False
         if self.has_gnd and newrot != 2:
             return False
         return True
-        
-        
-    # AWAY WITH THIS!!!
-    def set_rot_from_pin_dir(self, pin, d, only_mirror=None):
-        reald = d % 4
-        realpin = pin
-        
-        if not self.is_rotation_legal(d % 4):
-            return False
-        
-        for i in xrange(4):
-            if self.get_pin_direction(realpin) != reald:
-                self.rotate(1)
-            else:
-                break
-        return True
-    
-    def has_pin(self, names):
-        if not isinstance(names, (list, tuple)):
-            names = [names]
-        return all(name in [p.net for p in self.pins.values()] for name in names)
 
+    # (really clockwise? TODO: CHANGE ANYTHING TO COUNTERCLOCKWISE!!!!)
     def get_pin_direction(self, pin):
+        """Return direction of pin: 
+            0 -> NORTH, 
+            1 -> EAST,
+            2 -> SOUTH,
+            3 -> WEST
+        """
         if pin.pos[0] == 0:
             return 3 # left
         elif pin.pos[0] == self.size[0]:
@@ -297,23 +210,9 @@ class Block:
         else:
             assert False, "No _inner_ pins allowed in block!"
             
-            
-    def get_pin_direction_from_name(self, name, only_horiz=False):
-        if not self.has_pin(name):
-            raise PinNameDoesNotExist(name)
-        
-        for i, conn in self.pins.items():
-            if conn == name:
-                d = self.get_pin_direction(i)
-                if not only_horiz:
-                    return d
-                elif only_horiz and d in [1, 3]:
-                    return d
-                
-        return False
-    
                     
     def get_pins_from_direction(self, i):
+        """Return list of pins showing in the desired direction"""
         out = []
         for pos, pin in self.pins.items():
             if self.get_pin_direction(pin) == i:

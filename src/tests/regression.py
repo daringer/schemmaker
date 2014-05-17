@@ -16,7 +16,7 @@ class Regression(unittest.TestCase):
             {'conns': ['vdd', 'vbias1', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0, 0], 'pos': (4,0), 'rot': 0, 'mir': True},
             {'conns': ['net2', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm4',  'groups': [0, 1], 'pos': (4,8), 'rot': 0, 'mir': False},
             {'conns': ['outp', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
-            {'conns': ['vbias1', 'vbias1', 'vdd'],    'type': 'pmos',       'name': 'm6',  'groups': [1, 0], 'pos': (2,0), 'rot': 0, 'mir': False},
+            {'conns': ['vbias1', 'vbias1', 'vdd'],    'type': 'pmos',       'name': 'm6',  'groups': [1, 0], 'pos': (2,0), 'rot': 2, 'mir': False},
             {'conns': ['vbias2', 'vbias2', 'vbias1'], 'type': 'pmos',       'name': 'm7',  'groups': [1, 0], 'pos': (2,2), 'rot': 2, 'mir': False},
             {'conns': ['vdd', 'vbias3'],              'type': 'i_constant', 'name': 'i2',  'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
             {'conns': ['vbias3', 'vbias3', 'vbias4'], 'type': 'nmos',       'name': 'm8',  'groups': [1, 0], 'pos': (0,6), 'rot': 0, 'mir': True},
@@ -49,7 +49,8 @@ class Regression(unittest.TestCase):
             self.field.add_block(b, b_data["pos"])
             
         self.assertEqual(len(self.field), len(self.raw_data))
-    
+        
+       
     def test_block_move(self):
         self.test_add_blocks()
         
@@ -98,6 +99,8 @@ class Regression(unittest.TestCase):
         self.test_add_blocks()
         
         self.field.optimize_size()
+        self.field.show_occ()
+        
         r = Routing(self.field)
         ret = r.route()
         
