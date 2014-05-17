@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from field import Field, FieldSpaceOccupied, FieldSameSourceTargetPos, FieldBlockPosNotValid
+from field import Field, FieldSpaceOccupied, FieldSameSourceTargetPos, FieldBlockPosNotValid, FieldBlockCouldNotBePlaced
 from block import Block
 from random import choice, random, randint
 from print_block import bprint
@@ -17,10 +17,9 @@ class OptimizerError(Exception):
 
 class NoBlockPairFoundError(OptimizerError):
     pass
-	
 
 class BaseOptimizer:
-    def __init__(self, field):
+    def __init__(self, field, raw_blocks=None):
         # working on field
         self.field = field
         
@@ -30,6 +29,32 @@ class BaseOptimizer:
         # copy of final field
         self.final_field = None
         
+        if raw_blocks is not None:
+            self.init_from_raw(raw_blocks)
+    
+    def init_from_raw(self, raw_blocks):
+        for b_data in raw_blocks:
+            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
+            f.place_block(b)
+                        
+            ypos = choice(range(2, f.ny-4+1, 2))
+                
+            if not f.add_in_row(ypos, blk):
+                raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
+        return f
+    
+    def shuffle_from_field(self, field):
+        f = Field(field.circuit_id, field.nx, field.ny)
+        
+        blocks = field.get_blocks()
+        shuffle(blocks)
+        for blk in blocks:
+            ypos = choice(range(2, f.ny-4+1, 2))
+            if not f.add_in_row(ypos, blk):
+                raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
+        
+        return out
+    
     def run(self):
         """Overload this to implement optimizer"""
         pass

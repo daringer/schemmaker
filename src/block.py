@@ -26,23 +26,31 @@ class PinNameDoesNotExist(BlockException):
     pass
 
 class XYPoint:
-    def __init__(self, pos_or_x, y=None):
+    def __init__(self, pos_or_x=None, y=None):
         self.__xy = (0, 0)
         self.x = property(lambda s: s.__xy[0], self.__setterX)
         self.y = property(lambda s: s.__xy[1], self.__setterY)
-        self.pos = property(lambda s: s.__xy, self.__setterXY)        
+        self.pos = property(lambda s: s.__xy, self.__setterXY)
+        
+        if isinstance(pos_or_x, (tuple, list)) and len(pos_or_x) == 2:
+            self.__xy = self.__valid_pos(pos_or_x)
+        elif y is not None:
+            self.__xy = self.__valid_pos((pos_or_x, y))
+        
+    def copy(self):
+        return XYPoint(self.__xy)
  
     def __setterX(self, val):
         assert val is not None
         self.__xy = self.__valid_pos((val, self.__xy[1]))
         
-    def __setterXY(self, val):
+    def __setterY(self, val):
         assert val is not None
         self.__xy = self.__valid_pos((self.__xy[0], val))
         
     def __setterXY(self, val):
         assert val is not None
-        self.__xy = self.__validPos(val)
+        self.__xy = self.__valid_pos(val)
             
     def __valid_pos(self, pos):
         """Either enforce int() or float()"""
@@ -53,15 +61,15 @@ class XYPoint:
         return (x, y)
 
 
-class Pos:
-    def __init__(self, pos_or_x, y=None):
-        pass
-        #self.
-        #if isinstance(pos_or_x, Pos):
-        #    self.
-
-class Area:
+class Pos(XYPoint):
     pass
+    
+class Size(XYPoint):
+    pass
+
+class Area(XYPoint):
+    def __init__(self, from_pos, to_pos):
+        pass
 
 
 class Pin:
@@ -69,7 +77,6 @@ class Pin:
         self.net = net_name
         self.horizontal = horizontal
         self.vertical = vertical
-        
         
         self.supply = net_name.lower() == "vdd"
         self.gnd = net_name.lower() in ["gnd", "vss"]
@@ -159,7 +166,7 @@ class Block:
     
     def copy(self, parent):
         out = Block(self.type)
-        out.pins = [p.copy(out) for p in self.pins.values()]
+        out.pins = dict((k, v.copy(out)) for k, v in self.pins.items())
         out.mirrored = self.mirrored
         out.rotation = self.rotation
         
@@ -175,8 +182,8 @@ class Block:
         
         return out
         
-    def is_rot(self):
-        return True if self.rotation != 0 else False
+    #def is_rot(self):
+    #    return True if self.rotation != 0 else False
     
     def __rot_pos(self, pos, times, origin=(0,0)):
         """clock-wise"""
@@ -190,16 +197,21 @@ class Block:
             # move back from origin
             new_pos = (r_x + origin[0], r_y + origin[1])
         return new_pos
-            
-    
-    def rotate(self, count=2):
+      
+    def rotate(self, count, force=False):
         """rotate 'count' times CLOCK-WISE"""
         new_pins = {}
         rot = count % 4
         if rot == 0:
-            return 
+            return True
         
-        self.rotation = (self.rotation + rot) % 4
+        targ_rot = (self.rotation + rot) % 4
+        
+        # validate new orientation
+        if force and not self.is_orientation_legal(targ_rot, self.mirrored):
+            return False
+        
+        self.rotation = targ_rot
         for pos, pin in self.pins.items():
             pin.pos = self.__rot_pos(pos, rot, self.__rot_origin)
             new_pins[pin.pos] = pin
@@ -207,22 +219,34 @@ class Block:
         self.pins = new_pins
         
         # rot 1 or 3: (switch x and y size for 90° & 270°)
+        # TODO: DO SOMETHING IF THIS LEADS TO A OVERLAP!!
         if rot % 2 == 1:
             self.size = (self.size[1], self.size[0])
+            
+        return True
 
+    def mirror_v(self):
+        targ_rot = (self.rotation + 2) % 4
+        targ_mir = not self.mirrored
+        
+        if not self.is_orientation_legal(targ_rot, targ_mir):
+            return False
+        
+        return self.rotate(2) and self.mirror()
+        
     def mirror(self, set_to=None):
         if set_to is None:
             self.mirrored = not self.mirrored
         else:
             if self.mirrored == set_to:
-                return 
+                return True
             self.mirrored = set_to
         
+        # FIXME: do this for any block size!!!
         # nothing to care for atm...
         if len(self.pins) == 2:
-            return
+            return True
         
-        ilist = []
         for i, p in self.pins.items():
             if p.pos == (0, 1):
                 p.pos = (2, 1)
@@ -231,8 +255,9 @@ class Block:
             if p.pos == (2, 1):
                 p.pos = (0, 1)
                 continue
+        return True
 
-    def is_rot_legal(self, newrot):
+    def is_orientation_legal(self, newrot, newmir):
         if self.has_vdd and newrot != 0:
             return False
         if self.has_gnd and newrot != 2:
@@ -245,7 +270,7 @@ class Block:
         reald = d % 4
         realpin = pin
         
-        if not self.is_rot_legal(d % 4):
+        if not self.is_rotation_legal(d % 4):
             return False
         
         for i in xrange(4):
@@ -259,7 +284,7 @@ class Block:
         if not isinstance(names, (list, tuple)):
             names = [names]
         return all(name in [p.net for p in self.pins.values()] for name in names)
-    
+
     def get_pin_direction(self, pin):
         if pin.pos[0] == 0:
             return 3 # left
