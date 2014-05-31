@@ -9,6 +9,7 @@ from base_optimizer import FakeOptimizer
 from routing import Routing
 
 class Regression(unittest.TestCase):
+    """High-lvl tests, involving as much as possible"""
     def setUp(self):
         self.raw_data = [
             {'conns': ['net2', 'inp1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
@@ -72,7 +73,7 @@ class Regression(unittest.TestCase):
             self.field.swap(name2blk["m1"], name2blk["m2"])
         )
         
-    def test_field_copy_bootstrap(self):
+    def test_field_copy_roundtrip(self):
         self.test_add_blocks()
         f1 = self.field.copy()
         

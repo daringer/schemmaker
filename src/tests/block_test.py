@@ -22,7 +22,6 @@ class BlockUnitTest(unittest.TestCase):
         get_pins = self.blk.get_pins_from_direction
         get_dir = self.blk.get_pin_direction
        
-       
         ### 
         ### FAILS, FIX THAT!!!
         ###
