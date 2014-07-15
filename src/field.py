@@ -80,12 +80,15 @@ class FieldRowNotEmpty(FieldPosException):
     pass
 
 
+
+
 class FieldNode:
     def __init__(self, name, pos):
         self.x = pos[0]
         self.y = pos[1]
         self.names = name and [name]
-    
+ 
+
 class Field:
     def __init__(self, cid, nx, ny):
         # circuit id
@@ -121,7 +124,7 @@ class Field:
         self.open_dots = []
         self.output_dots = []
         self.net_forbidden_pos = {}
-        
+
     def clear(self):
         """Clear field from any blocks and wires"""
         blks = self.get_blocks()[:]
