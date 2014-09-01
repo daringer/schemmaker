@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from scipy import *
-from print_block import *
-from block import Block
 from math import sqrt, factorial, pow
 from random import choice, shuffle
 import itertools
 import heapq
 import copy
+
+from block import Block
+from print_block import *
 
 """
 -> representing a field of the dimension nx*ny
@@ -73,8 +74,20 @@ class FieldBlockBadOrientation(FieldBlockException):
 class FieldBlockCouldNotBePlaced(FieldBlockPosException):
     pass
 
+class FieldColumnNotEmpty(FieldPosException):
+    pass
+class FieldRowNotEmpty(FieldPosException):
+    pass
+
+
+class FieldNode:
+    def __init__(self, name, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.names = name and [name]
+    
 class Field:
-    def __init__(self, cid, nx, ny, raw_blocks=None):
+    def __init__(self, cid, nx, ny):
         # circuit id
         self.circuit_id = cid
         
@@ -82,98 +95,106 @@ class Field:
         self.nx = nx
         self.ny = ny
 
-        # block to (x,y) pos map
-        self.block_pos = {}
+        # block-to-position map (only one pos for each block)
+        self.block2xy = {}
+        self.block2yx = {}
         
-        # (x,y)/(y,x) to block map (all occupied pos as keys)
-        self.xy_pos_block = {}
-        self.yx_pos_block = {}
-        # (x,y)/(y,x) always sorted index-list
-        self.xy_index = []
-        self.yx_index = []
-        # (x,y)/(y,x) always sorted (only unique blocks) index-list
-        self.xy_unique_index = []
-        self.yx_unique_index = []        
+        # position-to-block map (all occupied pos as keys)
+        self.xy2block = {}
+        self.yx2block = {}
+        # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
+        # wiring related datastructures
         self.wires = []
         self.wire_dots = []
         self.open_dots = []
         self.output_dots = []
         self.net_forbidden_pos = {}
-        #self.net_wires = {}
-        
-        self.field_cost = None
-        
-        # UUUGLYYYY
-        self.spec_data = {}
-        
-        if raw_blocks is not None:
-            self.initial_placement(raw_blocks)
-        
-        self.clean_up()
         
     ############################################################################
     ### Cleanup/copy and clear Field
     ############################################################################        
-    def clean_up(self):
+    def clear_wires(self):
+        """Clear field from wires and related"""
         self.wires = []
-
+        self.wire_dots = []
+        self.open_dots = []
+        self.output_dots = []
+        self.net_forbidden_pos = {}
+        
     def clear(self):
+        """Clear field from any blocks and wires"""
         blks = self.get_blocks()[:]
         for blk in blks:
             self.remove_block(blk)
+            
+        self.clear_wires()
 
     def copy(self):
+        """Return true copy (clone) of instance"""
+        # copy only blocks - no wires!?
         out = Field(self.circuit_id, self.nx, self.ny)
-        for k, v in self.block_pos.items():
-            out.add_block(k.copy(), copy.deepcopy(v))
+        for k, v in self.block2xy.items():
+            out.add_block(k.copy(out), v)
         return out
 
-    def shuffle_copy(self):
-        out = Field(self.circuit_id, self.nx, self.ny)
-        
-        blocks = self.block_pos.keys()
-        shuffle(blocks)
-        for b in blocks:
-            out.place_block(b)        
-        
-        return out
-   
     ############################################################################
     ### various iterators for a fancier traversal
     ############################################################################
     def iter_pairwise(self, iterable):
+        """Iterate over pairs of items in iterables"""
         a, b = itertools.tee(iterable)
         next(b, None)
         return itertools.izip(a, b)
 
     def iter_xy_pos_block(self, split=False, unique=True):
+        """
+        (x, y)-based iteration over occupied positions
+          split: see Field::__generic_iter() for info
+          unique: True  -> only iterates over the blocks' start positions
+                  False -> iterates over all positions occupied by blocks
+        """
         it = self.__generic_iter(
-            self.xy_unique_index if unique else self.xy_index,
-            self.xy_pos_block,
+            sorted(self.block2xy.values() if unique else self.xy2block.keys()),
+            self.xy2block,
             split
         )
         for item in it:
             yield item
  
     def iter_yx_pos_block(self, split=False, unique=True):
+        """
+        (y, x)-based iteration over occupied positions
+          split: see Field::__generic_iter() for info
+          unique: True  -> only iterates over the blocks' start positions
+                  False -> iterates over all positions occupied by blocks
+        """
         it = self.__generic_iter(
-            self.yx_unique_index if unique else self.yx_index,
-            self.yx_pos_block,
+            sorted(self.block2yx.values() if unique else self.xy2block.keys()),
+            self.yx2block,
             split
         )
         for item in it:
             yield item
     
     def iter_rows(self):
+        """Iterate over all occupied rows"""
         for y, row in self.iter_yx_pos_block(split=True):
             yield row
             
     def iter_cols(self):
+        """Iterate over all occupied columns"""
         for x, col in self.iter_xy_pos_block(split=True):
             yield col
             
     def __generic_iter(self, idx, data, split):
+        """
+        (internal) - Generic iterator factory
+          idx: iterable of keys if type tuple with two items (a, b)
+          data: dict-able with idx \subset data.keys()
+          split: False -> [(a_1, [data[(a_1, b_1)], data[(a_1, b_2)], data[(a_1, b_y)], ...,], ... ]
+                 True  -> [(a_1, b_1), (a_1, b_2), ... , (a_2, b_1), (a_2, b_2), ... ]
+        """
         if not split:
             for pos in idx:
                 yield pos, data[pos]
@@ -193,68 +214,69 @@ class Field:
             if len(out) > 0:
                 yield active_one, out
                 
-    def iter_wire(self, scaling=1):
-        for x in xrange((self.nx+1)*scaling):
-            for y in xrange((self.ny+1)*scaling):
+    def iter_wire(self):
+        """Iterate over all 'wire-dots'"""
+        for x in xrange(self.nx + 1):
+            for y in xrange(self.ny + 1):
                 yield (x, y)
 
-    def iter_area_pos(self, pos=(0,0), size=(2,2)): #, reverse=False):
-        #endpos = (pos[0]+size[0], pos[1]+size[1])
-        #if reverse:
-        #    size = size[0]+1, size[1]+1
+    def iter_area_pos(self, pos=(0, 0), size=(2, 2)):
+        """
+        Iterate all points for given area
+          pos: position to start iteration from
+          size: size of area to iterate
+        """
         for add_x in xrange(size[0]):
             for add_y in xrange(size[1]):
-        #        if not reverse:
                 yield (pos[0] + add_x, pos[1] + add_y)
-        #        else:
-        #            yield (endpos[0] - add_x, endpos[1] - add_y)
-    
+        
     def iter_area_block(self, block):
-        if not self.validate_block(block):
+        """Iterate over all occupied positions from a given block"""
+        if not block in self:
             raise FieldBlockNotFound(block)
         
-        pos = self.block_pos[block]
-        for x, y in self.iter_area_pos(pos):
+        pos = self.block2xy[block]
+        for x, y in self.iter_area_pos(pos, block.size):
             yield x, y
 
     ############################################################################
     ### Item datastructure inspection/manipulation/search
     ############################################################################
     def get_blocks(self):
-        return self.block_pos.keys()
+        """Return all blocks inside field"""
+        return self.block2xy.keys()
+    
+    def get_nets(self):
+        """Return all nets inside field"""
+        out = set()
+        for blk in self.get_blocks():
+            out.update(p.name for p in blk.pins.values())
+        return out
    
     def get_block_pos(self, block):
-        if not self.validate_block(block):
+        """Return position of block inside field"""
+        if not block in self:
             raise FieldBlockNotFound(block)
-        return self.block_pos[block]    
+        return self.block2xy[block]    
     
-    def add_block(self, block, pos, idx_sort=True):
+    def add_block(self, block, pos):
+        """Add block at given position"""
         x, y = pos
         if not self.validate_block_pos(pos):
             raise FieldBlockPosNotValid(pos)
         elif not self.is_block_free(pos):
             raise FieldSpaceOccupied(pos)
         
-        for x, y in self.iter_area_pos(pos):
-            self.xy_pos_block[x, y] = block
-            self.xy_index.append((x, y))
-            
-            self.yx_pos_block[y, x] = block
-            self.yx_index.append((y, x))
+        for x, y in self.iter_area_pos(pos, block.size):
+            self.xy2block[(x, y)] = block
+            self.yx2block[(y, x)] = block
         
-        self.xy_unique_index.append(pos)
-        self.yx_unique_index.append((pos[1], pos[0]))
-        
-        if idx_sort:
-            self.xy_index.sort()
-            self.yx_index.sort()
-            self.xy_unique_index.sort()
-            self.yx_unique_index.sort()
-        
-        self.block_pos[block] = pos
+        self.block2xy[block] = pos
+        self.block2yx[block] = (pos[1], pos[0])
         return True
     
     def remove_pos(self, pos):
+        """Remove any block at given position"""
         if not self.validate_pos(pos):
             raise FieldPosNotValid(pos)
         elif not self.is_occ(pos):
@@ -263,26 +285,26 @@ class Field:
         return self.__remove_block(self.xy_pos_block[pos])
 
     def remove_block(self, block):
-        if not self.validate_block(block):
+        """Remove block from field"""
+        if not block in self:
             raise FieldBlockNotFound(block)
         return self.__remove_block(block)
 
     def __remove_block(self, block):
+        """(internal) helper to remove block and maintain datastructures"""
         for x, y in self.iter_area_block(block):
-            del self.xy_pos_block[x, y]
-            self.xy_index.remove((x, y))
+            del self.xy2block[x, y]
             
-            del self.yx_pos_block[y, x]
-            self.yx_index.remove((y, x))
+            del self.yx2block[y, x]
             
-        x, y = self.block_pos[block]
-        self.xy_unique_index.remove((x, y))
-        self.yx_unique_index.remove((y, x))
-        del self.block_pos[block]
+        x, y = self.block2xy[block]
+        del self.block2xy[block]
+        del self.block2yx[block]
         
         return True
     
     def move(self, block, pos, force=False):
+        """Move given block to new position"""
         x, y = pos
         pos_old = self.get_block_pos(block)
         
@@ -295,37 +317,55 @@ class Field:
         elif not self.is_block_free(pos):
             raise FieldSpaceOccupied(pos)
         
+        # TODO, FIXME ??? yes this is a important 
+        # detail for this specific block type !!!!!
+        # ultimately -> derive NMOSBlock, PMOSBlock, ResBlock, CapBlock, IDCBlock, ...
         ##### mmmh
-        if block.type == "i_constant":
-            if (block.has_gnd and y not in [self.ny-2, self.ny-4] or \
-                block.has_vdd and y not in [0, 2]) and not force:
-                return False
-        else:
-            if (block.has_gnd and y != (self.ny - 2) or \
-                block.has_vdd and y != 0) and not force:
-                return False
-        ##### mmmh - end
+        #if block.type == "i_constant":
+        #    if (block.has_gnd and y not in [self.ny-2, self.ny-4] or \
+        #        block.has_vdd and y not in [0, 2]) and not force:
+        #        return False
+        #else:
+        #    if (block.has_gnd and y != (self.ny - 2) or \
+        #        block.has_vdd and y != 0) and not force:
+        #        return False
+        ###### mmmh - end
         
         if not self.remove_block(block):
-            raise FieldCriticalError("Remove Block Failed!!!" + str(block))
+            raise FieldCriticalError("Remove Block Failed -> " + str(block))
             
-        if not self.add_block(block, pos):
-            raise FieldCriticalError("Add Block Failed!!!" + str(block))
+        ret = self.add_block(block, pos)
+        if not ret:
+            # rewind last operation -> remove_block -> re-add_block at pos_old
+            self.add_block(block, pos_old)
+            raise FieldCriticalError("Add Block Failed -> " + str(block))
         
         return True        
         
     def remove_col(self, which_x, width=2):
+        """
+        Remove (empty) column from field.
+        moving all blocks right of it to the left by width
+        """
         move_from_x = which_x + 2
-        good = False
-        if self.is_col_empty(which_x, width):
-            good = True
-            for pos in self.iter_area_pos((move_from_x, 0), (move_from_x+width-1, self.ny)):
-                if self.is_occ(pos):
-                    good &= self.move(self[pos], (pos[0] - width, pos[1]))
-            self.nx -= width
+        if not self.is_col_empty(which_x, width):
+            raise FieldColumnNotEmpty(which_x)
+    
+        start = (move_from_x, 0)
+        end = (move_from_x + width - 1, self.ny)
+        good = True
+        for pos in self.iter_area_pos(start, end):
+            if self.is_occ(pos):
+                good &= self.move(self[pos], (pos[0] - width, pos[1]))
+        
+        self.nx -= width
         return good        
     
     def insert_col(self, which_x, width=2):
+        """
+        Insert column into field.
+        moving all blocks right of it to the right by width
+        """
         self.nx += width
         
         good = True
@@ -341,6 +381,10 @@ class Field:
         return good     
 
     def insert_row(self, which_y, height=2):
+        """
+        Insert column into field.
+        moving all blocks below it down by height
+        """        
         self.ny += height
         
         good = True
@@ -356,48 +400,57 @@ class Field:
         return good
     
     def remove_row(self, which_y, height=2):
+        """
+        Remove row from field
+        moving all blocks below it up by height
+        """
         move_from_y = which_y + 2
-        good = False
-        if self.is_row_empty(which_y, height):
-            good = True
-            for pos in self.iter_area_pos((0, move_from_y), (self.nx, move_from_y+height-1)):
-                if self.is_occ(pos):
-                    good &= self.move(self[pos], (pos[0], pos[1] - 2))
-            self.ny -= height
+        if not self.is_row_empty(which_y, height):
+            raise FieldRowNotEmpty(which_y)
+        
+        good = True
+        for pos in self.iter_area_pos((0, move_from_y), (self.nx, move_from_y+height-1)):
+            if self.is_occ(pos):
+                good &= self.move(self[pos], (pos[0], pos[1] - 2))
+        self.ny -= height
         return good 
         
     ############################################################################
     ### Checkers and Validators
     ############################################################################
-    def validate_block_pos(self, pos):
+    def validate_block_pos(self, pos, blk_size=(2, 2)):
+        """A 'pos' is valid - the field is big enough for the block with 'blk_size'"""
         x, y = pos
-        return (x >= 0 and x <= self.nx - 2) and \
-               (y >= 0 and y <= self.ny - 2)
+        return (x >= 0 and x <= self.nx - blk_size[0]) and \
+               (y >= 0 and y <= self.ny - blk_size[1])
     
     def validate_pos(self, pos):
+        """A 'pos' is valid - the field contains this position"""
         x, y = pos
         return (x >= 0 and x <= self.nx) and \
                (y >= 0 and y <= self.ny)
     
-    def validate_block(self, block):
-        return block in self.block_pos.keys()
-    
     def is_occ(self, pos):
-        return pos in self.xy_pos_block
+        """Is the given 'pos' occupied?"""
+        return pos in self.xy2block
     
     def is_free(self, pos):
-        return not self.is_occ(pos)
+        """Is the given 'pos' free?"""
+        return pos not in self.xy2block
     
-    def is_block_free(self, pos):
-        return all([self.is_free(p) for p in self.iter_area_pos(pos)])
+    def is_block_free(self, pos, size=(2, 2)):
+        """Is the given 'pos' free for a block with 'size'?"""
+        return all([self.is_free(p) for p in self.iter_area_pos(pos, size)])
     
     def is_row_empty(self, which_y, height=2):
+        """Is the given row 'which_y' with 'height' empty?"""
         all_free = True
         for pos in self.iter_area_pos((0, which_y), (self.nx, which_y+height-1)):
             all_free &= self.is_free(pos)
         return all_free
     
     def is_col_empty(self, which_x, width=2):
+        """Is the given column 'which_x' with 'width' empty?"""
         all_free = True
         for pos in self.iter_area_pos((which_x, 0), (which_x+width-1, self.ny)):
             all_free &= self.is_free(pos)
@@ -407,11 +460,12 @@ class Field:
     ### Overloaded container methods
     ############################################################################
     def __contains__(self, item):
-        if isinstance(item, (tuple, list)): # position
-            
-            return item in self.xy_pos_block
-        elif isinstance(item, Block):       # block
-            return item in self.block_pos
+        # position
+        if isinstance(item, (tuple, list)) and len(item) == 2:
+            return item in self.xy2block
+        # block
+        elif isinstance(item, Block): 
+            return item in self.block2xy
         else:
             print "'in' operator on Field only for position-tuple or Block instances"
             return False
@@ -420,63 +474,35 @@ class Field:
         self.add_block(block, pos)
         
     def __getitem__(self, pos):
-        if pos not in self.xy_pos_block:
+        if pos not in self.xy2block:
             raise FieldNoBlockAtPos(pos)     
-        return self.xy_pos_block[pos]
+        return self.xy2block[pos]
 
     def __len__(self):
-        return len(self.block_pos)
+        return len(self.block2xy)
     
     ############################################################################
     ### Block operations
     ############################################################################    
-    def initial_placement(self, raw_blocks):
-        for b_data in raw_blocks:
-            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
-            self.place_block(b)
-                
-    def place_block(self, blk):
-        if blk.has_vdd:
-            ypos = 0
-            if not blk.set_pin_orientation("vdd", 0):
-                raise FieldBlockBadOrientation(blk)
-        elif blk.has_gnd:
-            ypos = self.ny - 2
-            if not blk.set_pin_orientation("gnd", 2):
-                raise FieldBlockBadOrientation(blk)            
-        else:
-            ypos = choice(range(2, self.ny-4+1, 2))
-        
-        if not self.add_in_row(ypos, blk):
-            raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
-        
     def rotate(self, block, i):
-        if block not in self:
-            return False
-        elif block.has_vdd or block.has_gnd:
-            return False
-        else:            
-            block.rotate(i)
-            return True
+        """Rotate block (clock-wise) by 'i'"""
+        # TODO: handle changed size due to rotation (NxM -> MxN)
+        return block.rotate(i)
 
     def mirror_h(self, block):
-        if block not in self.block_pos.keys():
-            return False
-        else:            
-            block.mirrored = not block.mirrored
-            return True
+        """Mirror block horizontally"""
+        if block not in self:
+            raise FieldBlockNotFound(block)
+        return block.mirror()
 
     def mirror_v(self, block):
-        if block not in self.block_pos.keys():
-            return False
-        elif block.has_vdd or block.has_gnd:
-            return False
-        else:
-            block.rotation = (block.rotation + 2) % 4
-            self.mirror_h(block)
-            return True
-                
+        """Mirror block vertically"""
+        if block not in self:
+            raise FieldBlockNotFound(block)
+        return block.mirror_v()
+               
     def swap(self, block1, block2):
+        """Swap positions between 'block1' and 'block2'"""
         pos1 = self.get_block_pos(block1)
         pos2 = self.get_block_pos(block2)
         
@@ -499,6 +525,7 @@ class Field:
         return True
         
     def add_in_row(self, ypos, blk, x_offset=0, from_behind=False):
+        """Add given 'blk' in row 'ypos' with a 'x_offset'"""
         if from_behind:
             xpos = self.nx - x_offset - 2
             step = -2
@@ -526,24 +553,18 @@ class Field:
     ### Wrappers and misc
     ############################################################################    
     
-    def cost(self, simple=False):
-        from field_cost import FieldCost
-        self.field_cost = FieldCost(self)
-        return self.field_cost.cost(simple)
-    
-    def route(self):
-        from field_cost import FieldCost
-        self.field_cost = FieldCost(self)
-        return self.field_cost.calc_routing_cost(scaling=4)
-    
     def optimize_size(self):
+        """Remove all empty rows and columns"""
         for x in xrange(0, self.nx - 1, 2):
-            self.remove_col(x)
+            if self.is_col_empty(x):
+                self.remove_col(x)
 
         for y in xrange(0, self.ny - 1, 2):
-            self.remove_row(y)
+            if self.is_row_empty(y):
+                self.remove_row(y)
 
     def show_occ(self):
+        """Show ascii art schematic, occupation based"""
         space = False
         blk_list = {}
         print ' ______' * self.nx
@@ -563,7 +584,6 @@ class Field:
                             
                             row += bprint(blk, im, rot)[z]
                             blk_list[blk] += 1
-                            #blk_list[blk] = min(blk_list[blk], 5)
                             space = True
                         else:
                             row += fprint()[0] if k!=2 else fprint()[1]

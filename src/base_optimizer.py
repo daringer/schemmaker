@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from field import Field, FieldSpaceOccupied, FieldSameSourceTargetPos, FieldBlockPosNotValid
+from field import Field, FieldSpaceOccupied, FieldSameSourceTargetPos, FieldBlockPosNotValid, FieldBlockCouldNotBePlaced
 from block import Block
 from random import choice, random, randint
 from print_block import bprint
@@ -17,12 +17,51 @@ class OptimizerError(Exception):
 
 class NoBlockPairFoundError(OptimizerError):
     pass
-	
 
 class BaseOptimizer:
-    def __init__(self, field):
+    def __init__(self, field, raw_blocks=None):
+        # working on field
         self.field = field
         
+        # show or hide console output
+        self.console_show = True
+        
+        # copy of final field
+        self.final_field = None
+        
+        if raw_blocks is not None:
+            self.init_from_raw(raw_blocks)
+    
+    def init_from_raw(self, raw_blocks):
+        for b_data in raw_blocks:
+            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
+            f.place_block(b)
+                        
+            ypos = choice(range(2, f.ny-4+1, 2))
+                
+            if not f.add_in_row(ypos, blk):
+                raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
+        return f
+    
+    def shuffle_from_field(self, field):
+        f = Field(field.circuit_id, field.nx, field.ny)
+        
+        blocks = field.get_blocks()
+        shuffle(blocks)
+        for blk in blocks:
+            ypos = choice(range(2, f.ny-4+1, 2))
+            if not f.add_in_row(ypos, blk):
+                raise FieldBlockCouldNotBePlaced((ypos, -1), blk)
+        
+        return out
+    
+    def run(self):
+        """Overload this to implement optimizer"""
+        pass
+
+class BaseRandomOptimizer(BaseOptimizer):
+    def __init__(self, field):
+        BaseOptimizer.__init__(self, field)
         # operations
         self.operations = [
             (self.random_swap, 50),
@@ -39,14 +78,43 @@ class BaseOptimizer:
         self.operations_weighted = []
         for op, weight in self.operations:
             for i in xrange(weight):
-                self.operations_weighted.append(op)
-        
-        # show or hide console output
-        self.console_show = True
+                self.operations_weighted.append(op)        
         
         # statistics about the executed operations 
         self.op_stats = dict((f[0].__name__, [0, 0]) for f in self.operations)
-           
+        
+    def dual_operation(self, field):
+        return self.get_random_operation()(field) and \
+               self.get_random_operation()(field)
+
+    def random_move(self, field):
+        blk = self.get_random_block(field)
+        x, y = field.get_block_pos(blk)
+        new_x, new_y = self.get_random_position(field)
+
+        if blk.has_vdd or blk.has_gnd:
+            return field.move(blk, (new_x, y))
+        else:
+            return field.move(blk, (new_x, new_y))
+
+    def random_swap(self, field):
+        b1, b2 = None, None
+        while b1 == b2:
+            b1 = self.get_random_block(field)
+            b2 = self.get_random_block(field)
+        return field.swap(b1, b2)
+        
+    def random_mirror(self, field):
+        blk = self.get_random_block(field)
+        if blk.has_vdd or blk.has_gnd:
+            return field.mirror_h(blk)        
+        return choice([field.mirror_v, field.mirror_h])(blk)
+            
+    def random_rotate(self, field):
+        blk = self.get_random_block(field)
+        while blk.has_vdd or blk.has_gnd:
+            blk = self.get_random_block(field)
+        return field.rotate(blk, choice([0, 2]))   
     def handle_visualization(self, field):
         if self.console_show:
             self.show(field)
@@ -132,35 +200,12 @@ class BaseOptimizer:
                         
         return field.move(block, (new_x, new_y))
     
-    def dual_operation(self, field):
-        return self.get_random_operation()(field) and \
-               self.get_random_operation()(field)
 
-    def random_move(self, field):
-        blk = self.get_random_block(field)
-        x, y = field.get_block_pos(blk)
-        new_x, new_y = self.get_random_position(field)
 
-        if blk.has_vdd or blk.has_gnd:
-            return field.move(blk, (new_x, y))
-        else:
-            return field.move(blk, (new_x, new_y))
-
-    def random_swap(self, field):
-        b1, b2 = None, None
-        while b1 == b2:
-            b1 = self.get_random_block(field)
-            b2 = self.get_random_block(field)
-        return field.swap(b1, b2)
+class FakeOptimizer(BaseOptimizer):
+    def __init__(self, field):
+        BaseOptimizer.__init__(self, field)
         
-    def random_mirror(self, field):
-        blk = self.get_random_block(field)
-        if blk.has_vdd or blk.has_gnd:
-            return field.mirror_h(blk)        
-        return choice([field.mirror_v, field.mirror_h])(blk)
-            
-    def random_rotate(self, field):
-        blk = self.get_random_block(field)
-        while blk.has_vdd or blk.has_gnd:
-            blk = self.get_random_block(field)
-        return field.rotate(blk, choice([0, 2]))
+    def run(self):
+        return self.field
+        

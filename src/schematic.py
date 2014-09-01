@@ -8,7 +8,7 @@ from field import Field, FieldException
 from block import Block
 from det_optimizer import Deterministic
 from genetic_optimizer import GeneticAlgorithm
-from base_optimizer import OptimizerError
+from base_optimizer import OptimizerError, FakeOptimizer
 
 class Schematic:
     def __init__(self, canvas_backend_cls=None):
@@ -92,14 +92,6 @@ class Schematic:
         title_text = "Circuit: {}".format(self.cur_circ)
         canvas.draw_text((-2.2, -2.0), title_text, weight=600, fontsize=8)
         
-        #### FIXME: fully abondon specdata, this does not belong here!
-        # write specs
-        #if field.spec_data is not None:
-        #    start, step = -0.5, 0.9
-        #    for i, (k, v) in enumerate(sorted(field.spec_data.items())):
-        #        canvas.draw_text((-3.0, start+i*step), k, fontsize=8, weight=600)
-        #        canvas.draw_text((-3.0, start+0.4+i*step), "{0:.2e}".format(float(v)), fontsize=8)
-        
         # draw grid
         #scaling = 4.0
         #for x, y in field.field_cost.graph:
@@ -114,7 +106,7 @@ class Schematic:
         c_metadata = c_metadata or {}
         
         for cid, circ_raw, outfn in c_data:
-            if self.generate_schematic(circ_raw, cid, specdata=c_metadata.get(cid)):
+            if self.generate_schematic(circ_raw, cid):
                 self.write_to_file(outfn)
             else:
                 print "[E] Could not generate schematic for circuit id: {}".format(cid)
@@ -126,13 +118,12 @@ class Schematic:
             print "[+] saved schematic to " + fn
         
     # creates schematic of a single circuit
-    def generate_schematic(self, circuit_raw=None, circuit_id=None, specdata=None, options=None):
+    def generate_schematic(self, circuit_raw=None, circuit_id=None, options=None):
         """
         Generate a schematic for the given raw circuit data.
 
         @param circuit_raw list-dict like [{"name":.. ,"type":.. , "conns":.. , "groups":..}, ..]
         @param circuit_id of the circuit as a tuple of strings ("foo", "bar")
-        @param specdata optional additional "specification" data 
         @param options a {} to set various config options, see __init__()
         """
         # allow to pre-set target circuit as object-attr, 
@@ -156,19 +147,21 @@ class Schematic:
             # max field size is critical...
             # DETERMINISTIC -> can be biiig, makes no difference
             # EVOLUTIONARY -> small approx 14x14 for 4block+bias 
+            print "\n".join(str(x) for x in self.cur_circ_raw)
+            field = Field(self.cur_circ, xsize, ysize)
             
-            field = Field(self.cur_circ, xsize, ysize, self.cur_circ_raw)
             
-            if optimizer == "deterministic":
-                o = Deterministic(field)
-            elif optimizer == "evolution":
-                o = GeneticAlgorithm(field)
-            else:
-                print "[ERR] Unknown optimizer!"
-                sys.exit(1)
-                
-            field = o.run() 
-            field.spec_data = specdata            
+            #if optimizer == "deterministic":
+            #    o = Deterministic(field)
+            #elif optimizer == "evolution":
+            #    o = GeneticAlgorithm(field)
+            #else:
+            #    print "[ERR] Unknown optimizer!"
+            #    sys.exit(1)
+            
+            o = FakeOptimizer(field, self.cur_circ_raw)
+            
+            field = o.run()        
             field.optimize_size()
             self.plot(field)
             return True
@@ -176,7 +169,6 @@ class Schematic:
         except (OptimizerError, FieldException) as e:
             print "[-] failed to create schematic for circ {}".format(self.cur_circ)
             print e.message
-            print e.tb
             return False
             
         return None # never reached
