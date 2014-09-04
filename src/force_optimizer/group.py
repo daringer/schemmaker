@@ -78,26 +78,22 @@ class Group:
             self.neighbors[neighbor] = 1
             self.neigbor_unsorted.append(neighbor)
 
-
-
-
     def add_block(self,block):
         self.blocks.append(block)
 
     def add_child(self, child):
         self.childs.append(child)
 
-    '''
-    function searches if an other group is the neighbor of this group
-    Parameter return:   0: NORTH
-                        1: SOUTH
-                        2: EAST
-                        3: WEST
-                        4: Unsorted
-                       -1: NO neighbor
-    '''
-    def are_neighbor(self,group):
-
+    def are_neighbor(self, group):
+        '''
+        function searches if an other group is the neighbor of this group
+        Parameter return:   0: NORTH
+                            1: SOUTH
+                            2: EAST
+                            3: WEST
+                            4: Unsorted
+                           -1: NO neighbor
+        '''
         for neighbor in self.neighbor_north:
             if neighbor == group:
                 return 0  # means NORTH

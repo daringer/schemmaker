@@ -39,12 +39,12 @@ class ForceAlgorithm(BaseOptimizer):
 
         self.initial_phase(self)
 
-    '''
-    DESCRIPTION:   Create the groups and add them to the list: groups
-    STATE:         finish
-    '''
-    def create_groups(self):
 
+    def create_groups(self):
+        '''
+        DESCRIPTION:   Create the groups and add them to the list: groups
+        STATE:         finish
+        '''
         #go through all blocks in circuit
         for block in self.blocks:
 
@@ -72,24 +72,25 @@ class ForceAlgorithm(BaseOptimizer):
             else:
                 self.group_main.add_child(group)
 
-    '''
-    PARAMETER:  group_ids     is an array with the IDs of the parent Groups and the ID of the searched group
-                return        the group if it exists, else None
-    STATE:      not finish
-    '''
+
     def search_group(self, group_id):
+        '''
+        PARAMETER:  group_ids     is an array with the IDs of the parent Groups and the ID of the searched group
+                    return        the group if it exists, else None
+        STATE:      not finish
+        '''
         #TODO: better with exception handling
         #TODO: this returns a boolean not a groop
         return any(group.id == group_id for group in self.groups)
 
-    '''
-    DESCRIPTION:    builds recursive the parents of the groupe, which containts the block
-                    when the algo reached the last parent, it will add them to the main group
-    PARAMETER:      child        The group which need a parent
-    STATE:          finish
-    '''
-    def create_parent(self, child):
 
+    def create_parent(self, child):
+        '''
+        DESCRIPTION:    builds recursive the parents of the groupe, which containts the block
+                        when the algo reached the last parent, it will add them to the main group
+        PARAMETER:      child        The group which need a parent
+        STATE:          finish
+        '''
         group_id = child.group_id[:len(child.group_id) - 1]  # remove the last ID
         Group group = self.search_group(group_id)  # check if the group allready exists
 
@@ -115,12 +116,12 @@ class ForceAlgorithm(BaseOptimizer):
         else:
             self.group_main.add_child(group)
 
-    '''
-    DESCRIPTION:    Looking for the neighbors of the groups via pins information of the blocks
-    STATE:          not finish
-    '''
-    def find_neighbors(self):
 
+    def find_neighbors(self):
+        '''
+        DESCRIPTION:    Looking for the neighbors of the groups via pins information of the blocks
+        STATE:          not finish
+        '''
         # go through all blocks in the circuit
         for block in self.blocks:
 
@@ -162,10 +163,10 @@ class ForceAlgorithm(BaseOptimizer):
                             group_1.add_neighbor(group_2)
                             group_2.add_neighbor(group_1)
 
-    '''
-    '''
-    def initial_phase(self):
 
+    def initial_phase(self):
+        '''
+        '''
         # looking for a child with connection to the parents east neighbors
         start = Group()
         for child in self.group_main.childs:
@@ -181,12 +182,12 @@ class ForceAlgorithm(BaseOptimizer):
 
         self.calculate_groups_position()
 
-    '''
-    Description:    Sorts the groups to the gnd / vcc / out list in their distance to out
-    '''
+
     #TODO: This is a one level version
     def wide_search(self, group, child):
-
+        '''
+        Description:    Sorts the groups to the gnd / vcc / out list in their distance to out
+        '''
         neighbors = child.neigbor_unsorted
 
         while len(neighbors) > 0:
@@ -234,8 +235,6 @@ class ForceAlgorithm(BaseOptimizer):
                         child_list.append(neighbor)
 
 
-    '''
-    '''
     def sort_unsorted_neighbor(self):
         #go through all groups in their relative distance to out
         for group in self.out_list:
@@ -268,8 +267,6 @@ class ForceAlgorithm(BaseOptimizer):
                             group.listfull_west = True
 
 
-    '''
-    '''
     def calculate_group_frame(self):
         #go through every group
         for group in self.groups:
