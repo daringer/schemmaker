@@ -20,6 +20,7 @@ class ForceAlgorithm(BaseOptimizer):
         self.groups = list()
         self.blocks = blocks
         self.wide_search_index = 0
+        self.wide_search_queue = ()
 
         # dictionary with pin.net_name as key and a block list as value
         self.dictionary_net_blocks = {}
@@ -108,7 +109,10 @@ class ForceAlgorithm(BaseOptimizer):
 
         if group.connected_out:
             group.connected_parent_east = True
-
+        if group.connected_gnd:
+            group.connected_parent_south = True
+        if group.connected_vcc:
+            group.connected_parent_north = True
         #if group has parents create them
         if len(group_id) > 1:
             self.create_parent(group)
@@ -167,92 +171,87 @@ class ForceAlgorithm(BaseOptimizer):
     def initial_phase(self):
         '''
         '''
-        # looking for a child with connection to the parents east neighbors
-        start = Group()
-        for child in self.group_main.childs:
-            if child.connected_parent_east is True:
-                start = child
-                break
-        self.group_main.childs_east_sorted.append(start)
-        self.wide_search(self.group_main, start)
-
-        self.sort_unsorted_neighbor()
+        # the main group is the only group on the highest level, so the queue starts with her
+        self.wide_search_queue.append(group_main)
+        self.wide_search()
 
         self.calculate_groups_frame()
 
         self.calculate_groups_position()
 
-
-    #TODO: This is a one level version
-    def wide_search(self, group, child):
+    def wide_search(self):
         '''
         Description:    Sorts the groups to the gnd / vcc / out list in their distance to out
         '''
-        neighbors = child.neigbor_unsorted
+        # get the first group of the queue to start a wide search on her over her subgroups
+        group = self.wide_search_queue.pop(0)
 
-        while len(neighbors) > 0:
-            neighbor = neighbors.pop()
+        # looking for a start child with connection to the parents east neighbors
+        start_child = Group()
+        for child in self.group.childs:
+            if child.connected_parent_east is True:
+                start_child = child
+                break
 
-            # check if the neighbor has the same parent like the child
-            if neighbor in group.childs:
+        # classic wide search
+        start_child.wide_search_index = 1
 
-                if neighbor not in group.childs_east_sorted:
-                    group.childs_east_sorted.append(neighbor)
+        # a sub wide search queue to start a classic wide search on the actual group
+        queue = []
+        queue.append(start_child)
 
-                    # check neighbor has connection to group.neighbor_east and then add child to group.child_east
-                    self.search_extern_neighbors(neighbor, group.neighbor_east, group.child_east)
-                    # check neighbor has connection to group.neighbor_west and then add child to group.child_west
-                    self.search_extern_neighbors(neighbor, group.neighbor_west, group.child_west)
-                    # check neighbor has connection to group.neighbor_north and then add child to group.child_north
-                    self.search_extern_neighbors(neighbor, group.neighbor_north, group.child_north)
-                    # check neighbor has connection to group.neighbor_south and then add child to group.child_south
-                    self.search_extern_neighbors(neighbor, group.neighbor_south, group.child_south)
+        while len(queue) > 0:
 
-        # till every child was visited
-        if len(group.childs) is not len(group.childs_east_sorted):
-            self.wide_search_index += 1
-            child_new = group.childs_east_sorted[self.wide_search_index]
-            self.wide_search(group, child_new)
-        # jump to next lower level (deep search)
-        else:
-            for parent in group.childs_east_sorted:
-                self.wide_search_index = 0
-                # looking for a child with connection to the parents east neighbors
-                start = Group()
-                for child_new in parent.childs:
-                    if child_new.connected_parent_east is True:
-                        start = child_new
-                        break
-                parent.childs_east_sorted.append(start)
-                self.wide_search(parent, start)
+            visited_child = queue.pop(0)
+            self.wide_search_queue.append(visited_child)
+            group.childs_east_sorted.append(visited_child)
 
-    def search_extern_neighbors(self, neighbor, neighbor_list, child_list):
-        for parent_neighbor in neighbor_list:
-            for neighb in neighbor.neigbor_unsorted:
-                if parent_neighbor is neighb.parent:
-                    if neigbhor not in child_list
-                        child_list.append(neighbor)
-                        child_list.append(neighbor)
+            if visited_child.connected_parent_east:
+                group.child_east.append(visited_child)
+            if visited_child.connected_parent_north:
+                group.child_north.append(visited_child)
+            if visited_child.connected_parent_south:
+                group.child_south.append(visited_child)
 
+            for neighbor in visited_child.neighbor_unsorted:
+                # only looking for neighbors in the same group and which are not allready discovered
+                if neighbor.parent == visited_child.parent and neighbor.wide_search_index == 0:
+                    neighbor.wide_search_index = 1
+                    queue.append(neighbor)
 
-    def sort_unsorted_neighbor(self):
+            visited_child.wide_search_index = 2
+
+        # when all children / subgroups are visited
+        # then we can start to sort the neighborhood of these childs in the group
+        self.sort_unsorted_neighbor(group.childs_east_sorted)
+
+        # when the wide search is finish with one group and her subgroups,
+        # then starts a wide search on a group in the same level
+        # or when all groups on one level where visited, then go to the next lower level
+        # the algorithm produce a sequence in the wide_search_queue,
+        # where groups of a higher level are in the first positions
+        # and the groups of a lower level comes in the last part
+        if len(self.wide_search_queue) > 0:
+            self.wide_search()
+
+    def sort_unsorted_neighbor(self, east_list):
         #go through all groups in their relative distance to out
-        for group in self.out_list:
+        for group in east_list:
             #if the group has neighbor which are not sorted to north, south, east, west
             if len(group.neigbor_unsorted) > 0:
 
                 #if north and south is full, then the only legal position for the not sorted neighbor is west
-                if group.listfull_north and group.listfull_south and not group.listfull_east:
+                if group.connected_parent_north and group.connected_parent_south and not group.connected_parent_east:
                     for neighbor in group.neigbor_unsorted:
                         self.add_neighbor_east_west(group, neighbor)
 
                 #if north and west is full, then the only legal position for the not sorted neighbor is south
-                elif group.listfull_north and group.listfull_west and not group.listfull_south:
+                elif group.connected_parent_north and group.connected_parent_west and not group.connected_parent_south:
                     for neighbor in group.neigbor_unsorted:
                         self.add_neighbor_north_south(group, neighbor)
 
                 #if south and west is full, then the only legal position for the not sorted neighbor is north
-                elif group.listfull_south and group.listfull_west and not group.listfull_north:
+                elif group.connected_parent_south and group.connected_parent_west and not group.connected_parent_north:
                     for neighbor in group.neigbor_unsorted:
                         self.add_neighbor_north_south(neighbor, group)
 
@@ -260,12 +259,11 @@ class ForceAlgorithm(BaseOptimizer):
                     #go through all unsorted neighbor
                     for neighbor in group.neigbor_unsorted:
                         #if the neighbor is connected to vcc and gnd
-                        if neighbor.connected_vcc and neighbor.connected_gnd:
+                        if neighbor.connected_parent_north and neighbor.connected_parent_south:
                             #then the only legal position for the neighbor is west
                             self.add_neighbor_east_west(group, neighbor)
                             #such a neighbor is dominant an the west list have to close
                             group.listfull_west = True
-
 
     def calculate_group_frame(self):
         #go through every group

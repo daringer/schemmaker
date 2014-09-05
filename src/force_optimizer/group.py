@@ -61,7 +61,12 @@ class Group:
         self.connected_out = False
         self.connected_inp = False
 
+        self.wide_search_flag = 0  # 0:not discover, 1: discover, 2: visited
+
         self.connected_parent_east = False
+        self.connected_parent_north = False
+        self.connected_parent_south = False
+        self.connected_parent_west = False
 
         self.listfull_north = False
         self.listfull_south = False
