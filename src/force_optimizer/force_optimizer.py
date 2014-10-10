@@ -88,10 +88,13 @@ class ForceAlgorithm(BaseOptimizer):
             for p in block.pins.values():
                 if p.net.lower() in ["gnd", "vss"]:
                     group.connected_gnd += 1
+                    group.block_south.append(block)
                 if p.net.lower() in ["vdd"]:
                     group.connected_vcc += 1
+                    group.block_north.append(block)
                 if p.net.lower() == "outp":
                     group.connected_out += 1
+                    group.block_east.append(block)
                 if p.net.lower().startswith("inp"):
                     group.connected_inp
 
@@ -233,8 +236,8 @@ class ForceAlgorithm(BaseOptimizer):
                         group_1 = self.search_group(group_1_id)
                         group_2 = self.search_group(group_2_id)
                         # if the groups are already connected, increment the connection number
-                        group_1.add_neighbor(group_2)
-                        group_2.add_neighbor(group_1)
+                        group_1.add_neighbor(group_2, block_1)
+                        group_2.add_neighbor(group_1, block_2)
 
 
     def initial_phase(self):
@@ -365,6 +368,21 @@ class ForceAlgorithm(BaseOptimizer):
                         group.neighbor_extern.append(neighbor)
                         group.neighbor_unsorted.remove(neighbor)
 
+                    if neighbor.connected_parent_north and neighbor.connected_parent_south:
+                        for block in group.neighbors[neighbor]:
+                            group.block_west.append(block)
+
+                        for block in neighbor.neighbors[group]:
+                            neighbor.block_east.append(block)
+
+
+                    if neighbor.connected_parent_north and neighbor.connected_parent_south == 0 and group.connected_parent_north == 0:
+                        for block in neighbor.neighbors[group]:
+                            neighbor.block_south.append(block)
+
+                        for block in group.neighbors[neighbor]:
+                            group.block_north.append(block)
+
             group.to_string()
 
     def group_compare(self, x, y):
@@ -417,26 +435,22 @@ class ForceAlgorithm(BaseOptimizer):
 
                 for extern in group.neighbor_extern:
                     if extern.parent in group.parent.neighbor_north:
-                        width_north += group.neighbors[extern]
+                        width_north += len(group.neighbors[extern])
                     if extern.parent in group.parent.neighbor_south:
-                        width_south += group.neighbors[extern]
+                        width_south += len(group.neighbors[extern])
                     if extern.parent in group.parent.neighbor_west:
-                        height_west += group.neighbors[extern]
+                        height_west += len(group.neighbors[extern])
                     if extern.parent in group.parent.neighbor_east:
-                        height_east += group.neighbors[extern]
+                        height_east += len(group.neighbors[extern])
 
             if len(group.childs) > 0:
                 for child in group.child_east:
-                    print "EAST Child:", child.group_id
                     height_east += child.size_height
                 for child in group.child_west:
-                    print "WEST Child:", child.group_id
                     height_west += child.size_height
                 for child in group.child_north:
-                    print "NORTH Child:", child.group_id
                     width_north += child.size_width
                 for child in group.child_south:
-                    print "SOUTH Child:", child.group_id
                     width_south += child.size_width
 
             print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
@@ -470,6 +484,8 @@ class ForceAlgorithm(BaseOptimizer):
         self.groups = sorted(self.groups, cmp=self.group_compare_negative)
 
         for group in self.groups:
+            group.position_x = -1
+            group.position_y = -1
             print "SortedGroup:", group.group_id
 
         groups = self.groups[:]
@@ -477,7 +493,56 @@ class ForceAlgorithm(BaseOptimizer):
 
         #go through every group
         for group in groups:
-            pass
+
+            for block in group.blocks:
+                if block in group.block_south:
+                    block.position_y = group.size_height - 1
+                elif block in group.block_north:
+                    block.position_y = 0
+                else:
+                    block.position_y = group.size_height / 2
+
+                if block in group.block_east:
+                    block.position_x = group.size_width - 1
+                elif block in group.block_west:
+                    block.position_x = 0
+                else:
+                    block.position_x = group.size_width / 2
+                print "Block:", block.name, " Group:", group.group_id, " X:", block.position_x, " Y:", block.position_y, "\n"
+
+            for child in group.childs:
+                #children connected to NORTH and SOUTH have position y = 0 and are tall as the group
+                if child in group.child_north and child in group.child_south:
+                    child.position_y = 0
+                    child.size_height = group.size_height
+                #children only connected to NORTH (not to SOUTH) have position y  = 0
+                elif child in group.child_north:
+                    child.position_y = 0
+                #children only connected to SOUTH (not to NORTH) touching the lower bound of the group
+                elif child in group.child_south:
+                    child.position_y = group.size_height - child.size_height
+                #children with no connection to NORTH or SOUTH are placed in the center
+                #overlapping is allowed and will be fixed in the force algorithm
+                else:
+                    child.position_y = group.size_height/2 - child.size_height/2
+
+                #children connected to WEST and EAST have position x = 0 and are wide as the group
+                if child in group.child_west and child in group.child_east:
+                    child.position_x = 0
+                    child.size_width = group.size_width
+                #children only connected to WEST (not to EAST) have position x  = 0
+                elif child in group.child_west:
+                    child.position_x = 0
+                #children only connected to EAST (not to WEST) touching the right bound of the group
+                elif child in group.child_east:
+                    child.position_x = group.size_width - child.size_width
+                #children with no connection to WEST or EAST are placed in the center
+                #overlapping is allowed and will be fixed in the force algorithm
+                else:
+                    child.position_x = group.size_width/2 - child.size_width/2
+
+        for group in groups:
+            group.to_string()
 
     def add_neighbor_north_south(self, group_north, group_south):
         '''

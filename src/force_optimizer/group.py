@@ -51,6 +51,10 @@ class Group:
 
         #List with all elements in this group
         self.blocks = []
+        self.block_north = []
+        self.block_south = []
+        self.block_west = []
+        self.block_east = []
 
         #
         self.distance_to_out = 0
@@ -73,14 +77,12 @@ class Group:
         self.listfull_east = False
         self.listfull_west = False
 
-    def add_neighbor(self,neighbor):
+    def add_neighbor(self,neighbor,block):
 
         if neighbor in self.neighbors.keys():
-            value = self.neighbors[neighbor]
-            value += 1
-            self.neighbors[neighbor] = value
+            self.neighbors[neighbor].append(block)
         else:
-            self.neighbors[neighbor] = 1
+            self.neighbors[neighbor] = [block]
             self.neighbor_unsorted.append(neighbor)
 
     def add_block(self,block):
@@ -112,7 +114,7 @@ class Group:
         s = ""
 
         for key, value in self.neighbors.items():
-            s = s + str(value) + "x " + str(key.group_id) + ", "
+            s = s + str(len(value)) + "x " + str(key.group_id) + ", "
         print "|    Neighbors:"
         print "|        ", s
         neighbors = []
