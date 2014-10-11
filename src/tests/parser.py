@@ -16,7 +16,12 @@ class VHDLParserTestSuite(unittest.TestCase):
 
     def test_parse_all_testdata(self):
         for fn in self.files:
-            output = parse(os.path.join(self.test_data_dir, fn))
+            path = os.path.join(self.test_data_dir, fn)
+            output = parse(path)
+
+            print output
+            print fn
+            print path
             
             self.assertTrue( len(output) > 0 )
             for blk in output:

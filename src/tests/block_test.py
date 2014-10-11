@@ -22,9 +22,6 @@ class BlockUnitTest(unittest.TestCase):
         get_pins = self.blk.get_pins_from_direction
         get_dir = self.blk.get_pin_direction
        
-        ### 
-        ### FAILS, FIX THAT!!!
-        ###
         for d in self.pin_dirs:
             pins = get_pins(self.pin_dirs[d])            
             self.assertEqual(len(pins), 1)

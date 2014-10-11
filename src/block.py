@@ -38,8 +38,6 @@ class Block(object):
         self.name = name
         self.groups = groups
 
-        #self.position_x = -1
-        #self.position_y = -1
         self.pos = (-1, -1)
 
         # size-range: 2x2 to NxM, x and y must be even
@@ -48,9 +46,6 @@ class Block(object):
 
         # containing field
         self.field = parent
-
-        # get from parent, if available
-        #self.pos = property(self.__pos_getter)
 
         # pin positions
         self.pins = {}
@@ -108,8 +103,7 @@ class Block(object):
     def __rot_pos(self, pos, times, origin=(0,0)):
         """(internal) rotate 'pos' 'times' counter-clock-wise around 'origin'"""
         new_pos = pos
-        # change idx from counter-clock-wise to clock-wise
-        for i in xrange(times):
+        for i in xrange(4 - times):
             # first move to origin
             o_x, o_y = new_pos[0] - origin[0], new_pos[1] - origin[1]
             # rotate 90° clock-wise
