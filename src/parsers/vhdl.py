@@ -6,7 +6,7 @@ def parse_vhdl(data_path):
     block, blocks = (), []
     p = False
     pat = re.compile("([a-z]+[0-9]+)+")
-    pat_type = re.compile("entity work\.([^\(]+)")
+    pat_type = re.compile("entity\w*([^\(]+)")
     pat_str_num = re.compile("([a-zA-Z]+)([0-9]+)")
  
     inside_generic_map = False
@@ -16,9 +16,11 @@ def parse_vhdl(data_path):
         for line in iter(fp.readline, ''):
             if "generic" in line:
                 inside_generic_map = True
+            
             if inside_generic_map and ")" in line:
                 inside_generic_map = False
                 continue
+            
             if inside_generic_map:
                 continue
 
@@ -31,9 +33,12 @@ def parse_vhdl(data_path):
                 if con[-1] == ',':
                     con = con[:-1]
                 block["conns"].append(con)
+            
             if line.startswith('subnet'):
                 left_res = pat.findall(line)
-                right_res = pat_type.findall(line)
+                right_res = pat_type.findall(line) 
+                if right_res:
+                    right_res = map(lambda s: s.strip(), right_res)
                 name_res = pat_str_num.findall(left_res[-1])
                 comp_counter.setdefault(name_res[0][0], 0)
                 group_ids = [int(x[-1]) for x in left_res[:-1]]
@@ -41,25 +46,14 @@ def parse_vhdl(data_path):
                 
                 block = {'groups': group_ids,
                          'name': name_res[0][0] + str(component_id),
-                         'type': right_res[0].replace("basic_", ""),
+                         'type': right_res[0],
                          'conns': []}
                 p = True
                 
-        final_blocks = []
-        for blk in blocks:
-            if blk["type"] == "i_constant":
-                if any(net.startswith("vbias") for net in blk["conns"]):
-                    break
-                
-                c_type = "vdd" if "vdd" in blk["conns"] else "gnd"
-                t_type = "pmos" if c_type == "vdd" else "nmos"
-                vb_type = "vbias1" if t_type == "pmos" else "vbias4"
-                other_net = blk["conns"][1] if blk["conns"][0] in ["vdd", "gnd"] else blk["conns"][0]
-                
-                blk["type"] = t_type
-                blk["conns"] = [c_type, vb_type, other_net]
-                blk["name"] = "m(0)".format(len(blocks)+1)
-            
-            final_blocks.append(blk)
-        
         return blocks
+
+
+if __name__ == "__main__":
+    fn = "../../testdata/circuit_op8.vhdl"
+    for i in parse_vhdl(fn):
+        print i
