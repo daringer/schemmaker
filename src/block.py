@@ -27,7 +27,7 @@ class BlockNoFieldAssigned(BlockException):
     pass
 
 
-class Block:
+class Block(object):
     def __init__(self, b_type, pins=None, name=None, groups=None, size=(2,2), parent=None):
         self.type = b_type
         self.name = name

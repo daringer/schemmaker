@@ -3,6 +3,7 @@ Created on 23.03.2014
 
 @author: Christian Auth
 '''
+
 import itertools
 from base_optimizer import BaseOptimizer
 from field import Field, FieldException
@@ -10,6 +11,10 @@ from operator import itemgetter, attrgetter
 from group import Group
 from block import Block
 
+MAIN_GRP = -4 
+OUT_GRP = -1
+VCC_GRP = -3
+GND_GRP = -2
 
 class ForceAlgorithm(BaseOptimizer):
     '''
@@ -35,10 +40,10 @@ class ForceAlgorithm(BaseOptimizer):
         self.dictionary_inp_blocks = {}
         self.dictionary_bia_blocks = {}
 
-        self.group_out = Group([-1])
-        self.group_gnd = Group([-2])
-        self.group_vcc = Group([-3])
-        self.group_main = Group([-4])
+        self.group_out = Group([OUT_GRP])
+        self.group_gnd = Group([GND_GRP])
+        self.group_vcc = Group([VCC_GRP])
+        self.group_main = Group([MAIN_GRP])
 
         self.group_out.neighbor_west.append(self.group_main)
         self.group_main.neighbor_east.append(self.group_out)
@@ -52,12 +57,12 @@ class ForceAlgorithm(BaseOptimizer):
         self.create_groups()
 
         for group in self.groups:
-            group.to_string()
+            print group
 
         self.find_neighbors()
 
         for group in self.groups:
-            group.to_string()
+            print group
 
         self.initial_phase()
 
@@ -197,7 +202,7 @@ class ForceAlgorithm(BaseOptimizer):
             # check all pins in the block
             for pin in block.pins.values():
                 # if pin is not connected to a special pin
-                if pin.net not in["outp", "vdd", "gnd", "vss"] and not pin.net.startswith("inp"):
+                if pin.net not in ["outp", "vdd", "gnd", "vss"] and not pin.net.startswith("inp"):
                     # add the block to block list in the dictionary
                     if pin.net in self.dictionary_net_blocks:
                         if block not in self.dictionary_net_blocks[pin.net]:
@@ -216,16 +221,14 @@ class ForceAlgorithm(BaseOptimizer):
             # get the list with the blocks connected to the net
             block_list = self.dictionary_net_blocks[key]
             print key, "Count Blocks:", len(block_list)
-            # comaper the blocks in the list
+            # compare the blocks in the list
 
-            for pair in itertools.combinations(block_list, 2):
-                block_1 = pair[0]
-                block_2 = pair[1]
+            for block_1, block_2 in itertools.combinations(block_list, 2):
                 print "Block1:", block_1.name, "Block2:", block_2.name
                 group_1_id = []
                 group_2_id = []
 
-                #start with the high level groups
+                # start with the high level groups
                 for i in range(len(block_1.groups)):
                     group_1_id.append(block_1.groups[i])
                     group_2_id.append(block_2.groups[i])
@@ -235,6 +238,7 @@ class ForceAlgorithm(BaseOptimizer):
                     if group_1_id != group_2_id:
                         group_1 = self.search_group(group_1_id)
                         group_2 = self.search_group(group_2_id)
+                        
                         # if the groups are already connected, increment the connection number
                         group_1.add_neighbor(group_2, block_1)
                         group_2.add_neighbor(group_1, block_2)
@@ -383,7 +387,7 @@ class ForceAlgorithm(BaseOptimizer):
                         for block in group.neighbors[neighbor]:
                             group.block_north.append(block)
 
-            group.to_string()
+            print group
 
     def group_compare(self, x, y):
         '''
@@ -464,7 +468,7 @@ class ForceAlgorithm(BaseOptimizer):
                 group.size_width = group.size_width + 1
                 group.size_height = group.size_height + 1
 
-            group.to_string()
+            print group
 
     def calculate_groups_position(self):
         '''
@@ -511,38 +515,38 @@ class ForceAlgorithm(BaseOptimizer):
                 print "Block:", block.name, " Group:", group.group_id, " X:", block.position_x, " Y:", block.position_y, "\n"
 
             for child in group.childs:
-                #children connected to NORTH and SOUTH have position y = 0 and are tall as the group
+                # children connected to NORTH and SOUTH have position y = 0 and are tall as the group
                 if child in group.child_north and child in group.child_south:
                     child.position_y = 0
                     child.size_height = group.size_height
-                #children only connected to NORTH (not to SOUTH) have position y  = 0
+                # children only connected to NORTH (not to SOUTH) have position y  = 0
                 elif child in group.child_north:
                     child.position_y = 0
-                #children only connected to SOUTH (not to NORTH) touching the lower bound of the group
+                # children only connected to SOUTH (not to NORTH) touching the lower bound of the group
                 elif child in group.child_south:
                     child.position_y = group.size_height - child.size_height
-                #children with no connection to NORTH or SOUTH are placed in the center
-                #overlapping is allowed and will be fixed in the force algorithm
+                # children with no connection to NORTH or SOUTH are placed in the center
+                # overlapping is allowed and will be fixed in the force algorithm
                 else:
                     child.position_y = group.size_height/2 - child.size_height/2
 
-                #children connected to WEST and EAST have position x = 0 and are wide as the group
+                # children connected to WEST and EAST have position x = 0 and are wide as the group
                 if child in group.child_west and child in group.child_east:
                     child.position_x = 0
                     child.size_width = group.size_width
-                #children only connected to WEST (not to EAST) have position x  = 0
+                # children only connected to WEST (not to EAST) have position x  = 0
                 elif child in group.child_west:
                     child.position_x = 0
-                #children only connected to EAST (not to WEST) touching the right bound of the group
+                # children only connected to EAST (not to WEST) touching the right bound of the group
                 elif child in group.child_east:
                     child.position_x = group.size_width - child.size_width
-                #children with no connection to WEST or EAST are placed in the center
-                #overlapping is allowed and will be fixed in the force algorithm
+                # children with no connection to WEST or EAST are placed in the center
+                # overlapping is allowed and will be fixed in the force algorithm
                 else:
                     child.position_x = group.size_width/2 - child.size_width/2
 
         for group in groups:
-            group.to_string()
+            print group
 
     def add_neighbor_north_south(self, group_north, group_south):
         '''
