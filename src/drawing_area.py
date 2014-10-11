@@ -1,7 +1,7 @@
 from math import sin, cos, pi
 
 import matplotlib.pyplot as plt
-import pylab
+#import pylab
 from matplotlib.ticker import NullLocator
 
 class DrawingArea:
@@ -45,7 +45,7 @@ class DrawingArea:
         # draw gnd and vdd
         self.gnd((field.nx/2. - 1, field.ny), 0)
         self.vdd((field.nx/2. - 1, -2.0), 0)  
-        
+
     def _get_device_draw_pos(self, pos, rot):
         """
         Move position into middle of device and 

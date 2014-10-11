@@ -1,4 +1,4 @@
-import sys
+import sys, os
 sys.path.append("..")
 
 import unittest
@@ -7,6 +7,8 @@ from field import Field
 from block import Block, Pin
 from base_optimizer import FakeOptimizer
 from routing import Routing
+from schematic import Schematic, draw_field
+
 
 class Regression(unittest.TestCase):
     """High-lvl tests, involving as much as possible"""
@@ -19,7 +21,7 @@ class Regression(unittest.TestCase):
             {'conns': ['outp', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
             {'conns': ['vbias1', 'vbias1', 'vdd'],    'type': 'pmos',       'name': 'm6',  'groups': [1, 0], 'pos': (2,0), 'rot': 2, 'mir': False},
             {'conns': ['vbias2', 'vbias2', 'vbias1'], 'type': 'pmos',       'name': 'm7',  'groups': [1, 0], 'pos': (2,2), 'rot': 2, 'mir': False},
-            {'conns': ['vdd', 'vbias3'],              'type': 'i_constant', 'name': 'i2',  'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
+            {'conns': ['vdd', 'vbias3'],              'type': 'idc',        'name': 'i2',  'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
             {'conns': ['vbias3', 'vbias3', 'vbias4'], 'type': 'nmos',       'name': 'm8',  'groups': [1, 0], 'pos': (0,6), 'rot': 0, 'mir': True},
             {'conns': ['vbias2', 'vbias3', 'net3'],   'type': 'nmos',       'name': 'm9',  'groups': [1, 0], 'pos': (2,6), 'rot': 0, 'mir': False},
             {'conns': ['vbias4', 'vbias4', 'gnd'],    'type': 'nmos',       'name': 'm10', 'groups': [1, 0], 'pos': (0,8), 'rot': 0, 'mir': False},
@@ -29,9 +31,29 @@ class Regression(unittest.TestCase):
         self.field = None
         self.maxDiff = None
         
+        self.pdf_path = "circuit_draw_test_file.pdf"
+        self.tempfiles = []
+
+        #print "cleaning up old test-pdfs:"
+        #os.system("rm " + self.pdf_path[:-4] + "*")
+        
     def tearDown(self):
+        #for fn in self.tempfiles:
+        #    if os.path.exists(fn):
+        #        os.unlink(fn)
         pass
     
+    def get_tempfile(self, num=None):
+        suffix = num or self.tempfiles
+        fn_parts = self.pdf_path.split(".")
+
+        self.assertTrue(len(fn_parts) == 2)
+
+        out = "{}_{}.{}".format(fn_parts[0], suffix, fn_parts[1])
+        self.tempfiles.append(out)
+
+        return out
+
     def test_init_field(self):
         self.field = Field("test_circ", 40, 40)
         
@@ -96,17 +118,48 @@ class Regression(unittest.TestCase):
         self.assertEqual(len(f1.yx2block), len(f2.yx2block))
                               
     
-    def test_routing(self):
+    def test_field_finalization(self):
         self.test_add_blocks()
-        
         self.field.optimize_size()
-        self.field.show_occ()
-        
+
+        # no error is good at this point
+        self.assertTrue(True)
+
+    def test_routing(self):
+        self.test_field_finalization()
+
         r = Routing(self.field)
         ret = r.route()
         
         self.assertGreaterEqual(ret[0], 1)
+
+    def test_draw_pdf(self):
+        self.test_routing()
+
+        fn = draw_field(self.field, self.get_tempfile(1))
+
+        self.assertTrue( os.path.isfile(fn) )
+        self.assertTrue( os.path.exists(fn) )
+        self.assertTrue( len(file(fn).read()) > 10 )
+
+    def test_draw_without_routing(self):
+        self.test_field_finalization()
         
+        fn = draw_field(self.field, self.get_tempfile(2))
+
+        self.assertTrue( os.path.isfile(fn) )
+        self.assertTrue( os.path.exists(fn) )
+        self.assertTrue( len(file(fn).read()) > 10 )
+
+    def test_draw_with_grid(self):
+        self.test_field_finalization()
+        
+        fn = draw_field(self.field, self.get_tempfile(3), grid=(10, 10, 0, 0, 2))
+
+        self.assertTrue( os.path.isfile(fn) )
+        self.assertTrue( os.path.exists(fn) )
+        self.assertTrue( len(file(fn).read()) > 10 )
+
 
 if __name__ == "__main__":
     unittest.main()
