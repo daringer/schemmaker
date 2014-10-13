@@ -38,7 +38,7 @@ class Block(object):
         self.name = name
         self.groups = groups
 
-        self.pos = (-1, -1)
+        self.pos = [-1, -1]
 
         # size-range: 2x2 to NxM, x and y must be even
         assert size[0] % 2 == 0 and size[1] % 2 == 0
@@ -54,7 +54,7 @@ class Block(object):
         self.mirrored = False
 
         # rotation: 0=0°, 1=-90°, 2=-180°, 3=-270°
-        # rotation is COUNTER-CLOCK-WISE !!!  
+        # rotation is COUNTER-CLOCK-WISE !!!
         self.rotation = 0
         self.__rot_origin = (self.size[0]/2, self.size[1]/2)
 
