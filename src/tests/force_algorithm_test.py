@@ -36,7 +36,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         self.assertEqual(self.field.nx, 40)
         self.assertEqual(self.field.ny, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks)
+        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['outp'], [])
 
     def test_force_algo(self):
         print "test_create_groups"

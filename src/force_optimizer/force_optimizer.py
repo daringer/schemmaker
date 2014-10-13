@@ -14,7 +14,7 @@ from block import Block
 class ForceAlgorithm(BaseOptimizer):
     '''
     '''
-    def __init__(self, field, blocks):
+    def __init__(self, field, blocks, north_pins, south_pins, east_pins, west_pins):
         '''
         '''
 
@@ -27,6 +27,11 @@ class ForceAlgorithm(BaseOptimizer):
         self.wide_search_index = 0
         self.wide_search_queue = []
 
+        self.pins_east = east_pins
+        self.pins_west = west_pins
+        self.pins_north = north_pins
+        self.pins_south = south_pins
+
         # dictionary with pin.net_name as key and a block list as value
         self.dictionary_net_blocks = {}
         self.dictionary_vdd_blocks = {}
@@ -35,19 +40,23 @@ class ForceAlgorithm(BaseOptimizer):
         self.dictionary_inp_blocks = {}
         self.dictionary_bia_blocks = {}
 
-        self.group_out = Group([-1])
-        self.group_gnd = Group([-2])
-        self.group_vcc = Group([-3])
+        self.group_east = Group([-1])
+        self.group_south = Group([-2])
+        self.group_north = Group([-3])
+        self.group_west = Group([-5])
         self.group_main = Group([-4])
 
-        self.group_out.neighbor_west.append(self.group_main)
-        self.group_main.neighbor_east.append(self.group_out)
+        self.group_east.neighbor_west.append(self.group_main)
+        self.group_main.neighbor_east.append(self.group_east)
 
-        self.group_vcc.neighbor_south.append(self.group_main)
-        self.group_main.neighbor_north.append(self.group_vcc)
+        self.group_west.neighbor_east.append(self.group_main)
+        self.group_main.neighbor_west.append(self.group_west)
 
-        self.group_main.neighbor_south.append(self.group_gnd)
-        self.group_gnd.neighbor_north.append(self.group_main)
+        self.group_north.neighbor_south.append(self.group_main)
+        self.group_main.neighbor_north.append(self.group_north)
+
+        self.group_main.neighbor_south.append(self.group_south)
+        self.group_south.neighbor_north.append(self.group_main)
 
         self.create_groups()
 
@@ -86,13 +95,13 @@ class ForceAlgorithm(BaseOptimizer):
 
             #check the connection to important pins
             for p in block.pins.values():
-                if p.net.lower() in ["gnd", "vss"]:
+                if p.net.lower() in self.pins_south:
                     group.connected_gnd += 1
                     group.block_south.append(block)
-                if p.net.lower() in ["vdd"]:
+                if p.net.lower() in self.pins_north:
                     group.connected_vcc += 1
                     group.block_north.append(block)
-                if p.net.lower() == "outp":
+                if p.net.lower() in self.pins_east:
                     group.connected_out += 1
                     group.block_east.append(block)
                 if p.net.lower().startswith("inp"):
@@ -157,7 +166,6 @@ class ForceAlgorithm(BaseOptimizer):
         group.connected_out = 0
         group.connected_inp = 0
 
-
         for c in group.childs:
             group.connected_gnd += c.connected_gnd
             group.connected_vcc += c.connected_vcc
@@ -197,7 +205,7 @@ class ForceAlgorithm(BaseOptimizer):
             # check all pins in the block
             for pin in block.pins.values():
                 # if pin is not connected to a special pin
-                if pin.net not in["outp", "vdd", "gnd", "vss"] and not pin.net.startswith("inp"):
+                if pin.net not in (self.pins_east+self.pins_north+self.pins_south+self.pins_west) and not pin.net.startswith("inp"):
                     # add the block to block list in the dictionary
                     if pin.net in self.dictionary_net_blocks:
                         if block not in self.dictionary_net_blocks[pin.net]:
@@ -238,7 +246,6 @@ class ForceAlgorithm(BaseOptimizer):
                         # if the groups are already connected, increment the connection number
                         group_1.add_neighbor(group_2, block_1)
                         group_2.add_neighbor(group_1, block_2)
-
 
     def initial_phase(self):
         '''
@@ -521,10 +528,30 @@ class ForceAlgorithm(BaseOptimizer):
                 #children only connected to SOUTH (not to NORTH) touching the lower bound of the group
                 elif child in group.child_south:
                     child.position_y = group.size_height - child.size_height
-                #children with no connection to NORTH or SOUTH are placed in the center
-                #overlapping is allowed and will be fixed in the force algorithm
+                #children with no connection to NORTH or SOUTH
                 else:
-                    child.position_y = group.size_height/2 - child.size_height/2
+                    #search for neighbors with north connection
+                    #find the highest and set the child under that neighbor
+                    max_height = 0
+                    for neighbor in child.neighbors:
+                        if neighbor in group.child_north:
+                            max_height = neighbor.size_height
+                    if max_height:
+                        child.position_y = max_height
+                    else:
+                        #no neighbor in North, so check South
+                        #search for neighbors with south connection
+                        #find the highest and set the child over that neighbor
+                        max_height = 0
+                        for neighbor in child.neighbors:
+                            if neighbor in group.child_south:
+                                max_height = neighbor.size_height
+                        if max_height:
+                            child.position_y = group.size_height - max_height - child.size_height
+                        else:
+                            # placed child in the center
+                            # overlapping is allowed and will be fixed in the force algorithm
+                            child.position_y = group.size_height / 2 - child.size_height / 2
 
                 #children connected to WEST and EAST have position x = 0 and are wide as the group
                 if child in group.child_west and child in group.child_east:
@@ -536,10 +563,32 @@ class ForceAlgorithm(BaseOptimizer):
                 #children only connected to EAST (not to WEST) touching the right bound of the group
                 elif child in group.child_east:
                     child.position_x = group.size_width - child.size_width
-                #children with no connection to WEST or EAST are placed in the center
-                #overlapping is allowed and will be fixed in the force algorithm
+                #children with no connection to WEST or EAST
                 else:
-                    child.position_x = group.size_width/2 - child.size_width/2
+                    #search for neighbors with west connection
+                    #find the biggest and set the child right to that neighbor
+                    max_width = 0
+                    for neighbor in child.neighbors:
+                        if neighbor in group.child_west:
+                            max_width = neighbor.size_width
+                    if max_width:
+                        child.position_x = max_width
+                    else:
+                        #no neighbor in west, so check east
+                        #search for neighbors with east connection
+                        #find the biggest and set the child left to that neighbor
+                        max_width = 0
+                        for neighbor in child.neighbors:
+                            if neighbor in group.child_east:
+                                max_width = neighbor.size_width
+                        if max_width:
+                            child.position_x = group.size_width - max_width - child.size_width
+                        else:
+                            # placed child in the center
+                            # overlapping is allowed and will be fixed in the force algorithm
+                            child.position_x = group.size_width / 2 - child.size_width / 2
+
+
 
         for group in groups:
             group.to_string()
