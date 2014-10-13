@@ -27,14 +27,18 @@ class BlockNoFieldAssigned(BlockException):
     pass
 
 
-class Block:
-    def __init__(self, b_type, pins=None, name=None, groups=None, size=(2,2), parent=None):
+class Block(object):
+
+    has_vdd = property(lambda s: any(p.supply for p in s.pins.values()))
+    has_gnd = property(lambda s: any(p.gnd for p in s.pins.values()))
+    is_biased = property(lambda s: any(p.biased for p in s.pins.values()))
+
+    def __init__(self, b_type, pins=None, name=None, groups=None, size=(2, 2), parent=None):
         self.type = b_type
         self.name = name
         self.groups = groups
 
-        self.position_x = -1
-        self.position_y = -1
+        self.pos = (-1, -1)
 
         # size-range: 2x2 to NxM, x and y must be even
         assert size[0] % 2 == 0 and size[1] % 2 == 0
@@ -43,9 +47,6 @@ class Block:
         # containing field
         self.field = parent
 
-        # get from parent, if available
-        self.pos = property(self.__pos_getter)
-
         # pin positions
         self.pins = {}
 
@@ -53,7 +54,7 @@ class Block:
         self.mirrored = False
 
         # rotation: 0=0°, 1=-90°, 2=-180°, 3=-270°
-        # rotation is clock-wise! TODO: CHANGE ALL OCCURS TO COUNTER-CLOCKWISE!!!
+        # rotation is COUNTER-CLOCK-WISE !!!  
         self.rotation = 0
         self.__rot_origin = (self.size[0]/2, self.size[1]/2)
 
@@ -67,9 +68,6 @@ class Block:
             else:
                 self.pins[(1, 2)] = Pin(self, pins[1], (1, 2), False, True)
 
-        self.has_vdd = any(p.supply for p in self.pins.values())
-        self.has_gnd = any(p.gnd for p in self.pins.values())
-        self.is_biased = any(p.biased for p in self.pins.values())
 
         # TODOOOOO!!!
         #rot, mir = self.get_prefered_orientation()
@@ -94,10 +92,6 @@ class Block:
         out.mirrored = self.mirrored
         out.rotation = self.rotation
 
-        out.has_vdd = self.has_vdd
-        out.is_biased = self.is_biased
-        out.has_gnd = self.has_gnd
-
         out.name = self.name
         out.groups = self.groups
 
@@ -106,11 +100,9 @@ class Block:
 
         return out
 
-    # TODO: counter-clock-wise
     def __rot_pos(self, pos, times, origin=(0,0)):
-        """(internal) rotate 'pos' 'times' clock-wise around 'origin'"""
+        """(internal) rotate 'pos' 'times' counter-clock-wise around 'origin'"""
         new_pos = pos
-        # change idx from counter-clock-wise to clock-wise
         for i in xrange(4 - times):
             # first move to origin
             o_x, o_y = new_pos[0] - origin[0], new_pos[1] - origin[1]
@@ -120,9 +112,8 @@ class Block:
             new_pos = (r_x + origin[0], r_y + origin[1])
         return new_pos
 
-    # TODO: change all to counter-clock-wise
     def rotate(self, count, force=False):
-        """rotate block clock-wise 'count' times"""
+        """Rotate block counter-clock-wise 'count' times"""
         new_pins = {}
         rot = count % 4
         if rot == 0:
@@ -149,7 +140,7 @@ class Block:
         return True
 
     def mirror_v(self):
-        """mirror block vertically"""
+        """Mirror block vertically"""
         targ_rot = (self.rotation + 2) % 4
         targ_mir = not self.mirrored
 
@@ -160,7 +151,7 @@ class Block:
 
     def mirror(self, set_to=None):
         """
-        mirror block horizontally,
+        Mirror block horizontally,
         or set 'set_to' mirror property and apply
         """
         if set_to is None:
@@ -194,22 +185,21 @@ class Block:
             return False
         return True
 
-    # (really clockwise? TODO: CHANGE ANYTHING TO COUNTERCLOCKWISE!!!!)
     def get_pin_direction(self, pin):
         """Return direction of pin:
             0 -> NORTH,
-            1 -> EAST,
+            1 -> WEST
             2 -> SOUTH,
-            3 -> WEST
+            3 -> EAST,
         """
         if pin.pos[0] == 0:
-            return 3 # left
+            return 1    # left/west
         elif pin.pos[0] == self.size[0]:
-            return 1 # right
+            return 3    # right/east
         elif pin.pos[1] == 0:
-            return 0 # top
+            return 0    # top/north
         elif pin.pos[1] == self.size[1]:
-            return 2 # bottom
+            return 2    # bottom/south
         else:
             assert False, "No _inner_ pins allowed in block!"
 
