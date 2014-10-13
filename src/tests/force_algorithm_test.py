@@ -28,6 +28,8 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             {'conns': ['net3', 'vbias4', 'gnd'],      'type': 'nmos',       'name': 'm11', 'groups': [1, 0], 'pos': (2,8), 'rot': 0, 'mir': True},
         ]
         self.blocks = []
+        self.field = Field("test_circ", 40, 40)
+
         for i, b_data in enumerate(self.raw_data):
             b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
 
@@ -35,11 +37,15 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             b.mirror(set_to=b_data["mir"])
 
             self.blocks.append(b)
-        self.field = Field("test_circ", 40, 40)
+
 
         self.assertEqual(self.field.nx, 40)
         self.assertEqual(self.field.ny, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks)
+        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['outp'], [])
+
+        for block in self.force_algo.blocks:
+            self.field.add_block(block,block.pos)
+
 
     def test_force_algo(self):
         print "test_create_groups"

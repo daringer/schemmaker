@@ -7,6 +7,8 @@ from field import Field
 from block import Block, Pin
 from base_optimizer import FakeOptimizer
 from routing import Routing
+
+from force_optimizer import ForceAlgorithm
 from schematic import Schematic, draw_field
 
 
@@ -30,19 +32,22 @@ class Regression(unittest.TestCase):
 
         self.field = None
         self.maxDiff = None
-        
+
+
         self.pdf_path = "circuit_draw_test_file.pdf"
         self.tempfiles = []
 
         #print "cleaning up old test-pdfs:"
         #os.system("rm " + self.pdf_path[:-4] + "*")
-        
+
+
     def tearDown(self):
         #for fn in self.tempfiles:
         #    if os.path.exists(fn):
         #        os.unlink(fn)
         pass
-    
+
+
     def get_tempfile(self, num=None):
         suffix = num or self.tempfiles
         fn_parts = self.pdf_path.split(".")
@@ -54,70 +59,72 @@ class Regression(unittest.TestCase):
 
         return out
 
+
     def test_init_field(self):
         self.field = Field("test_circ", 40, 40)
-        
+
         self.assertEqual(self.field.nx, 40)
         self.assertEqual(self.field.ny, 40)
-            
+
     def test_add_blocks(self):
         self.test_init_field()
-        
+
         for i, b_data in enumerate(self.raw_data):
             b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
 
             b.rotate(b_data["rot"])
             b.mirror(set_to=b_data["mir"])
-            
+
             self.field.add_block(b, b_data["pos"])
-            
+
         self.assertEqual(len(self.field), len(self.raw_data))
-        
-       
+
+
     def test_block_move(self):
         self.test_add_blocks()
-        
+
         blk = filter(lambda a: a.name == "m3", self.field.get_blocks())
-        
+
         self.assertEqual(len(blk), 1)
         blk = blk[0]
         pos = (6, 0)
-        
+
         self.assertTrue(self.field.move(blk, pos))
         self.assertEqual(self.field.get_block_pos(blk), pos)
-    
+
     def test_block_swap(self):
         self.test_add_blocks()
-        
+
         name2blk = dict((b.name, b) for b in self.field.get_blocks())
-                
+
         self.assertTrue(
             self.field.swap(name2blk["m1"], name2blk["m2"])
         )
-        
+
     def test_field_copy_roundtrip(self):
         self.test_add_blocks()
         f1 = self.field.copy()
-        
+
         self.test_add_blocks()
         f2 = self.field.copy()
-        
+
         list_props = lambda blks, prop: tuple(sorted(getattr(blk, prop) for blk in blks))
-        
+
         bl1 = f1.get_blocks()
         bl2 = f2.get_blocks()
         for pname in ["name", "groups", "type"]:
             self.assertSequenceEqual(list_props(bl1, pname), list_props(bl2, pname))
-        
+
         self.assertEqual(f1.ny, f2.ny)
         self.assertEqual(f1.nx, f2.nx)
-        
+
         self.assertEqual(len(f1.block2xy), len(f2.block2xy))
         self.assertEqual(len(f1.block2yx), len(f2.block2yx))
         self.assertEqual(len(f1.xy2block), len(f2.xy2block))
         self.assertEqual(len(f1.yx2block), len(f2.yx2block))
-                              
-    
+
+
+
     def test_field_finalization(self):
         self.test_add_blocks()
         self.field.optimize_size()
@@ -130,8 +137,9 @@ class Regression(unittest.TestCase):
 
         r = Routing(self.field)
         ret = r.route()
-        
+
         self.assertGreaterEqual(ret[0], 1)
+
 
     def test_draw_pdf(self):
         self.test_routing()
@@ -144,7 +152,7 @@ class Regression(unittest.TestCase):
 
     def test_draw_without_routing(self):
         self.test_field_finalization()
-        
+
         fn = draw_field(self.field, self.get_tempfile(2))
 
         self.assertTrue( os.path.isfile(fn) )
@@ -153,7 +161,7 @@ class Regression(unittest.TestCase):
 
     def test_draw_with_grid(self):
         self.test_field_finalization()
-        
+
         fn = draw_field(self.field, self.get_tempfile(3), grid=(10, 10, 0, 0, 2))
 
         self.assertTrue( os.path.isfile(fn) )
