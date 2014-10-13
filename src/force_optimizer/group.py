@@ -92,58 +92,69 @@ class Group:
         if self.childs.count(child) == 0:
             self.childs.append(child)
 
-    def to_string(self):
-        print ""
-        print "+------------------------------------------"
-        print "| Group:", self.group_id
-        print "+------------------------------------------"
-        if self.parent is not None:
-            print "|    Parent:", self.parent.group_id
+    def __str__(self):
+        nl = "\n"
+        less_padding = 16
+        padding = 20
+        more_padding = 24
 
+        # header (group_id + size + pos)
+        o = "" + nl
+        o += "+------------------------------------------" + nl
+        o += "| {}: {} - Size: {}x{} - Pos: {}x{}{}".format("Group", self.group_id, 
+                self.size_height, self.size_width,
+                self.position_x, self.position_y, nl, pad=less_padding)
+        o += "+------------------------------------------" + nl
+
+        # show parent
+        if self.parent is not None:
+            o += "|{:>{pad}}: {}{}".format("Parent", self.parent.group_id, nl, pad=padding)
+
+        # list children
         children = []
         for child in self.childs:
             children.append(child.group_id)
-        print "|    Children:", children
+        o += "|{:>{pad}}: {}{}".format("Children", children, nl, pad=padding)
 
-        blocks = []
-        for block in self.blocks:
-            blocks.append(block.name)
-        print "|    Blocks:", blocks
+        o += "|{:>{pad}}: {}{}".format("Blocks", ", ".join(b.name for b in self.blocks), nl, pad=padding)
 
-        print "|    Connected to:", ("OUT:"+ str( self.connected_out)) if self.connected_out else '', ("VDD:"+ str( self.connected_vcc)) if self.connected_vcc else '', ("GND:"+ str( self.connected_gnd)) if self.connected_gnd else ''
-        s = ""
+        # connected to which ports
+        c_types = (("OUT", self.connected_out),
+                   ("VDD", self.connected_vcc),
+                   ("GND", self.connected_gnd))
+        _c = ["{}: {}".format(name, num) for name, num in c_types if num]
+        o += "|{:>{pad}}: {} {}".format("Connected to", ", ".join(_c), nl, pad=padding)
 
-        for key, value in self.neighbors.items():
-            s = s + str(len(value)) + "x " + str(key.group_id) + ", "
-        print "|    Neighbors:"
-        print "|        ", s
-        neighbors = []
-        for neighbor in self.neighbor_east:
-            neighbors.append(neighbor.group_id)
-        print "|        EAST:", neighbors
-        neighbors = []
-        for neighbor in self.neighbor_west:
-            neighbors.append(neighbor.group_id)
-        print "|        WEST:", neighbors
-        neighbors = []
-        for neighbor in self.neighbor_north:
-            neighbors.append(neighbor.group_id)
-        print "|        NORTH:", neighbors
-        neighbors = []
-        for neighbor in self.neighbor_south:
-            neighbors.append(neighbor.group_id)
-        print "|        SOUTH:", neighbors
+        # neighbor count
+        o += "|{:>{pad}}: ".format("Neighbors", pad=padding) 
+        if len(self.neighbors) > 0:
+            o += ", ".join(("{}x {}".format(len(v), k.group_id)) for k, v in self.neighbors.items())
+        o += nl
 
-        print "|    Connected to parent's neighbor:", "EAST" if self.connected_parent_east else '', "NORTH" if self.connected_parent_north else '', "SOUTH" if self.connected_parent_south else '', "WEST" if self.connected_parent_west else ''
+        # list all neighbors
+        n_types = (("EAST", self.neighbor_east),
+                   ("WEST", self.neighbor_west),
+                   ("NORTH", self.neighbor_north),
+                   ("SOUTH", self.neighbor_south))
+        for direction, data in n_types:
+            if len(data) > 0:
+                o += "|{:>{pad}}: {}{}".format(
+                        direction, ", ".join(str(n.group_id) for n in data), nl, pad=more_padding)
+
+        # show parent's neighbor conns
+        p_con_type = (("EAST", self.connected_parent_east),
+                      ("WEST", self.connected_parent_west),
+                      ("NORTH", self.connected_parent_north),
+                      ("SOUTH", self.connected_parent_south))
+        o += "|{:>{pad}}  {}".format("Parent's neighbor", nl, pad=padding)
+        o += "|{:>{pad}}: {}{}".format("connections",
+                ", ".join(("{0[0]}:{0[1]}".format(key)) for key in p_con_type if data), nl, pad=padding)
 
 
-        print "|    Frame:"
-        print "|        width:", self.size_width
-        print "|        height:",self.size_height
-        print "|        x:",self.position_x
-        print "|        y:",self.position_y
-        print "+------------------------------------------"
-        print ""
+        # footer
+        o += "+------------------------------------------" + nl
+        o +=  nl
+        return o
 
     def are_neighbor(self, group):
         '''

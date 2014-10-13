@@ -6,9 +6,9 @@ from random import choice
 from drawing_area import DrawingArea
 from field import Field, FieldException
 from block import Block
-from det_optimizer import Deterministic
-from genetic_optimizer import GeneticAlgorithm
-from base_optimizer import OptimizerError, FakeOptimizer
+#from det_optimizer import Deterministic
+#from genetic_optimizer import GeneticAlgorithm
+#from base_optimizer import OptimizerError, FakeOptimizer
 
 class Schematic:
     def __init__(self, canvas_backend_cls=None):
@@ -25,39 +25,64 @@ class Schematic:
             canvas_backend_cls = FigureCanvasPdf
         self.canvas_backend_cls = canvas_backend_cls
 
-    def plot(self, field):
+    def plot(self, field, grid=None):
         # initializing drawing area for the schematics
         self.draw_area_obj = canvas = DrawingArea(field, self.canvas_backend_cls)
 
         # some abrevations/constants
         nx, ny = field.nx, field.ny    
-        mid = nx/2.
-        lu, ru, lb, rb = [mid]*4 
-        blockToPos = field.block_pos
-        pin_pos, pin_dir = {}, {}
-
+        top_max, top_min = None, None
+        bot_max, bot_min = None, None
+        
+        # block -> position mapping
+        block2pos = field.block2xy
+        
         # draw each block at its position
-        for item in blockToPos.keys():
-            bType, pos = item.type, blockToPos[item]
-            rot = item.rotation
-            mir = item.mirrored
-            if bType == "nmos":
+        for blk, pos in block2pos.items():
+            b_type, rot, mir, size  = blk.type, blk.rotation, blk.mirrored, blk.size
+            bad_dir = (rot == 2 and not mir) or (rot == 0 and mir)
+            add_max = size[0]/2 if bad_dir else 0
+            add_min = size[0]/2 if not bad_dir else 0
+
+            # find max x/y coors for wires, 
+            # (only with vdd/vss connected devices)
+            if blk.has_vdd:
+                if top_max is None:
+                    top_max = pos[0]
+                top_max = max(top_max, pos[0] + add_max)
+                if top_min is None:
+                    top_min = pos[0]
+                top_min = min(top_min, pos[0] + add_min)
+            if blk.has_gnd:
+                if bot_max is None:
+                    bot_max = pos[0]
+                bot_max = max(bot_max, pos[0] + add_max) 
+                if bot_min is None:
+                    bot_min = pos[0]
+                bot_min = min(bot_min, pos[0] + add_min) 
+            
+            # device placement
+            if b_type == "nmos":
                 canvas.nmos(pos, mir, rot)
-            elif bType == "pmos":
+            elif b_type == "pmos":
                 canvas.pmos(pos, mir, rot)
-            elif bType == "i_constant":
+            elif b_type == "idc":
                 canvas.i_const(pos, rot)
-            elif bType == "cap":
+            elif b_type == "cap":
                 canvas.c(pos, rot)
+            elif b_type == "res":
+                canvas.r(pos, rot)
                 
         # drawing dots 
         for dot in field.wire_dots:
             canvas.filled_dot(dot)
             
         # draw vdd and gnd line
-        lw = canvas.linewidth
-        canvas.ax.plot([lu, ru], [0, 0], color='k', linewidth=lw)
-        canvas.ax.plot([lb, rb], [ny, ny], color='k', linewidth=lw)
+        vss_go, vss_end = (top_min, 0), (top_max, 0)
+        vdd_go, vdd_end = (bot_min, ny), (bot_max, ny)
+
+        canvas.draw_line_simple(vdd_go, vdd_end)
+        canvas.draw_line_simple(vss_go, vss_end)
         
         # draw open-input dots
         for direction, pos, name in field.open_dots:
@@ -65,45 +90,63 @@ class Schematic:
             mod_x = (-0.13 if direction == 1 else (-0.1 - len(name) * 0.1))
             canvas.draw_text((pos[0]+mod_x, pos[1]-0.4), name, fontsize=8, weight=600)
         
-        # draw output pin
-        outpos, o_count = None, 0
-        ## determine output start position
-        out_x = max(x for x, y in field.output_dots)
-        for p in field.output_dots:
-            if out_x == p[0]:
-                add_y = 0 if outpos is None else outpos[1]
-                outpos = (p[0], p[1] + add_y) 
-                o_count += 1
-        outpos = (outpos[0], outpos[1]/o_count)
-        ## draw filled (soldering) dot and a wire/line to the right
-        canvas.filled_dot(outpos)
-        canvas.draw_line(outpos, (0, 0), (0.5, 0), 0)
-        ## draw open (output pin) dot
-        open_dot_point = (outpos[0] + 0.5, outpos[1])
-        canvas.open_dot(open_dot_point, 1)
-        ## draw label
-        canvas.draw_text((open_dot_point[0]+0.3, open_dot_point[1]), "out", fontsize=8, weight=600)
+        # draw output pin or not, if no output available
+        if len(field.output_dots) > 0:
+            outpos, o_count = None, 0
+            ## determine output start position
+            out_x = max(x for x, y in field.output_dots)
+            for p in field.output_dots:
+                if out_x == p[0]:
+                    add_y = 0 if outpos is None else outpos[1]
+                    outpos = (p[0], p[1] + add_y) 
+                    o_count += 1
+            outpos = (outpos[0], outpos[1]/o_count)
+            ## draw filled (soldering) dot and a wire/line to the right
+            canvas.filled_dot(outpos)
+            canvas.draw_line(outpos, (0, 0), (0.5, 0), 0)
+            ## draw open (output pin) dot
+            open_dot_point = (outpos[0] + 0.5, outpos[1])
+            canvas.open_dot(open_dot_point, 1)
+            ## draw label
+            canvas.draw_text((open_dot_point[0]+0.3, open_dot_point[1]), "out", fontsize=8, weight=600)
         
-        # draw wires
+        # draw wires, if available
         for wire in field.wires:
             canvas.draw_line_simple(*wire)
                  
-        # write id
-        title_text = "Circuit: {}".format(self.cur_circ)
-        canvas.draw_text((-2.2, -2.0), title_text, weight=600, fontsize=8)
+        # write id, if set
+        if self.cur_circ is not None and len(self.cur_circ) != "":
+            title_text = "Circuit: {}".format(self.cur_circ)
+            canvas.draw_text((-2.2, -2.0), title_text, weight=600, fontsize=8)
         
-        # draw grid
-        #scaling = 4.0
-        #for x, y in field.field_cost.graph:
-        #    canvas.dot((x/scaling, y/scaling), "black", 0.02, False)
+        # draw grid 
+        if grid is not None:
 
-    def save_all_to_file(self, c_data=None, c_metadata=None):
+            # regular grid
+            scaling = 2.0
+            x_off, y_off = 0, 0
+            width, height = 20*scaling, 20*scaling
+
+            # custom grid set through 'grid' argument
+            if len(grid) == 5:
+                x_off, y_off = grid[2], grid[3]
+                scaling = float(grid[4])
+                width, height = int(grid[0]*scaling), int(grid[1]*scaling)
+
+            # draw dots, 
+            for x in xrange(x_off, width-x_off):
+                for y in xrange(y_off, height-y_off):
+                    canvas.dot((x/scaling + x_off, y/scaling + y_off), "black", 0.01, True)
+
+    def save_all_to_file(self, c_data=None):
+        """Pass multiple circuits as a list ('c_data') and generate their schematics
+        
+        c_data: list of (circuit_id, (raw) circuit blocks, output filename)
+        """
         # check if result data and output dir is given
         if c_data is None:
             print "[E] no schematic(s) passed to save_all_to_file()!"
             return 
-        
-        c_metadata = c_metadata or {}
         
         for cid, circ_raw, outfn in c_data:
             if self.generate_schematic(circ_raw, cid):
@@ -113,6 +156,7 @@ class Schematic:
                 
     # write schematic to file
     def write_to_file(self, fn, dpi=600):
+        """Write this schematic to file at path 'fn' using a given 'dpi'"""
         if self.draw_area_obj:
             self.draw_area_obj.fig.savefig(fn, dpi=dpi)
             print "[+] saved schematic to " + fn
@@ -122,9 +166,9 @@ class Schematic:
         """
         Generate a schematic for the given raw circuit data.
 
-        @param circuit_raw list-dict like [{"name":.. ,"type":.. , "conns":.. , "groups":..}, ..]
-        @param circuit_id of the circuit as a tuple of strings ("foo", "bar")
-        @param options a {} to set various config options, see __init__()
+        circuit_raw: list-dict like [{"name":.. ,"type":.. , "conns":.. , "groups":..}, ..]
+        circuit_id: of the circuit as a tuple of strings ("foo", "bar")
+        options: a {} to set various config options, see __init__()
         """
         # allow to pre-set target circuit as object-attr, 
         # instead of passing as argument
@@ -172,3 +216,22 @@ class Schematic:
             return False
             
         return None # never reached
+
+
+def draw_field(field, fn, grid=None):
+    """
+    Simple wrapper to draw a Field() to a PDF.
+
+    field: (with blocks filled) Field() to be drawn
+    fn: write pdf to this filename
+    grid: 'None'  -> no grid will be drawn
+          'tuple' -> (<width>, <height>, <x_start>, <y_start>, <scaling>)
+                     -> a grid with the given dimensions is drawn
+          else    -> a default grid will be drawn -> (20, 20, 0, 0, 2)
+    """
+    s = Schematic()
+    s.plot(field, grid=grid)
+    s.write_to_file(fn)
+    return fn
+
+
