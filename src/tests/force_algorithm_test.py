@@ -1,4 +1,5 @@
 import sys
+import os
 sys.path.append("..")
 
 import unittest
@@ -6,6 +7,7 @@ import unittest
 from block import *
 from force_optimizer import *
 from field import *
+from parsers.vhdl import parse_vhdl as parse
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
 
@@ -27,6 +29,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             {'conns': ['vbias4', 'vbias4', 'gnd'],    'type': 'nmos',       'name': 'm10', 'groups': [1, 0], 'pos': (0,8), 'rot': 0, 'mir': False},
             {'conns': ['net3', 'vbias4', 'gnd'],      'type': 'nmos',       'name': 'm11', 'groups': [1, 0], 'pos': (2,8), 'rot': 0, 'mir': True},
         ]
+        '''
         self.blocks = []
         self.field = Field("test_circ", 40, 40)
 
@@ -41,11 +44,11 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         self.assertEqual(self.field.nx, 40)
         self.assertEqual(self.field.ny, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['outp'], [])
+        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out'], [])
 
         for block in self.force_algo.blocks:
-            self.field.add_block(block,block.pos)
-
+            self.field.add_block(block, block.pos)
+        '''
 
     def test_force_algo(self):
         print "test_create_groups"
@@ -57,6 +60,30 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         # Check that both subgroups of the main group are neighbor
         self.assertTrue(self.force_algo.group_main.childs[0].are_neighbor(self.force_algo.group_main.childs[1]))
+
+    def test_import(self):
+        print "test_import"
+        self.test_data_dir = "../../testdata/"
+        self.fn = "circuit_op8.vhdl"
+        self.files = os.listdir(self.test_data_dir)
+        path = os.path.join(self.test_data_dir, self.fn)
+        output = parse(path)
+
+        self.blocks = []
+
+        for i, b_data in enumerate(output):
+            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
+            #b.rotate(b_data["rot"])
+            #b.mirror(set_to=b_data["mir"])
+
+            self.blocks.append(b)
+
+        print self.fn
+        print path
+
+        self.field = Field("test_circ", 40, 40)
+        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out'], [])
+
 
 if __name__ == '__main__':
     unittest.main()

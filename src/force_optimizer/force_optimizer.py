@@ -90,7 +90,10 @@ class ForceAlgorithm(BaseOptimizer):
         for block in self.blocks:
 
             group_id = block.groups  # the lowest group get all IDs
-            print "Block: ", block.name, " Group ID", group_id
+            pins = ""
+            for p in block.pins.values():
+                pins += " " + p.net
+            print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
             group = self.search_group(group_id)  # check if the group allready exists
 
             if group is None:  # create a new group if needed
@@ -100,16 +103,19 @@ class ForceAlgorithm(BaseOptimizer):
 
             #check the connection to important pins
             for p in block.pins.values():
-                if p.net.lower() in self.pins_south:
-                    group.connected_gnd += 1
-                    group.block_south.append(block)
-                if p.net.lower() in self.pins_north:
-                    group.connected_vcc += 1
-                    group.block_north.append(block)
-                if p.net.lower() in self.pins_east:
-                    group.connected_out += 1
-                    group.block_east.append(block)
-                if p.net.lower().startswith("inp"):
+                for pin in self.pins_south:
+                    if p.net.lower().startswith(pin):
+                        group.connected_gnd += 1
+                        group.block_south.append(block)
+                for pin in self.pins_north:
+                    if p.net.lower().startswith(pin):
+                        group.connected_vcc += 1
+                        group.block_north.append(block)
+                for pin in self.pins_east:
+                    if p.net.lower().startswith(pin):
+                        group.connected_out += 1
+                        group.block_east.append(block)
+                if p.net.lower().startswith("in"):
                     group.connected_inp
 
             if group.connected_out > 0:
@@ -330,6 +336,9 @@ class ForceAlgorithm(BaseOptimizer):
 
                 visited_child.wide_search_flag = 2
 
+            # increment the number of connected to parent north/south/east/west
+            self.sort_extern_neighbors(group.childs_east_sorted)
+
             # when all children / subgroups are visited
             # then we can start to sort the neighborhood of these childs in the group
             self.sort_unsorted_neighbor(group.childs_east_sorted)
@@ -343,16 +352,53 @@ class ForceAlgorithm(BaseOptimizer):
             if len(self.wide_search_queue) > 0:
                 self.wide_search()
 
+
+
+    def sort_extern_neighbors(self, east_list):
+
+        for group in east_list:
+            print "SORT EXTERN NEIGHBOR for:", str(group.group_id), "Neighbors count:", len(group.neighbor_extern)
+            print "Group PArent Neighbor East count:", len(group.parent.neighbor_east)
+            print "Group PArent Neighbor WEST count:", len(group.parent.neighbor_west)
+            print "Group PArent Neighbor SOUTH count:", len(group.parent.neighbor_south)
+            print "Group PArent Neighbor NORTH count:", len(group.parent.neighbor_north)
+            if len(group.neighbor_extern):
+                for neighbor in group.neighbor_extern:
+
+                    if neighbor.parent in group.parent.neighbor_east:
+                        group.connected_parent_east += 1
+                        neighbor.connected_parent_west += 1
+
+                    if neighbor.parent in group.parent.neighbor_west:
+                        group.connected_parent_west += 1
+                        neighbor.connected_parent_east += 1
+
+                    if neighbor.parent in group.parent.neighbor_north:
+                        group.connected_parent_north += 1
+                        neighbor.connected_parent_south += 1
+
+                    if neighbor.parent in group.parent.neighbor_south:
+                        group.connected_parent_south += 1
+                        neighbor.connected_parent_north += 1
+
+            print "Group connected parent east:", group.connected_parent_east
+            print "Group connected parent west:", group.connected_parent_west
+            print "Group connected parent south:", group.connected_parent_south
+            print "Group connected parent north:", group.connected_parent_north
     def sort_unsorted_neighbor(self, east_list):
         '''
         '''
         groups = []
+
         for group in east_list:
             groups.append(group.group_id)
+
         print "Sort Unsorted Neighbor:", groups
+
         #go through all groups in their relative distance to out
         for group in east_list:
             print "Group in East List:", group.group_id
+
             #if the group has neighbor which are not sorted to north, south, east, west
             if len(group.neighbor_unsorted) > 0:
 
@@ -364,20 +410,32 @@ class ForceAlgorithm(BaseOptimizer):
                 #go through all unsorted neighbor
                 for neighbor in group.neighbor_unsorted:
 
-                    if neighbor.parent is group.parent:
+                    #if the neighbor is connected to vcc and gnd
+                    if neighbor.connected_parent_north and neighbor.connected_parent_south:
+                        #then the only legal position for the neighbor is west
+                        self.add_neighbor_east_west(group, neighbor)
+                        #such a neighbor is dominant an the west list have to close
+                        group.listfull_west = True
 
-                        #if the neighbor is connected to vcc and gnd
-                        if neighbor.connected_parent_north and neighbor.connected_parent_south:
-                            #then the only legal position for the neighbor is west
-                            self.add_neighbor_east_west(group, neighbor)
-                            #such a neighbor is dominant an the west list have to close
-                            group.listfull_west = True
-                        if neighbor.connected_parent_north and neighbor.connected_parent_south == 0 and group.connected_parent_north == 0:
-                            self.add_neighbor_north_south(neighbor, group)
+                    if neighbor.connected_parent_north and neighbor.connected_parent_south == 0 and group.connected_parent_north == 0:
+                        # the neighbor has a parent NORTH connection but no parent SOUTH and the group herself have no connection to the parent NORTH
+                        # than add the neighbor to the NORTH of the group
+                        self.add_neighbor_north_south(neighbor, group)
 
-                    else:
-                        group.neighbor_extern.append(neighbor)
-                        group.neighbor_unsorted.remove(neighbor)
+                    if neighbor.connected_parent_east and neighbor.connected_parent_west == 0 and group.connected_parent_east == 0:
+                        # the neighbor has a parent EAST connection but no parent WEST connection and the group herself has no parent EAST connection
+                        # than add
+                        self.add_neighbor_east_west(neighbor, group)
+
+                    if neighbor.connected_parent_south and neighbor.connected_parent_north == 0 and group.connected_parent_south == 0:
+                        # the neighbor has a parent SOUTH connection but no parent NORTH and the group herself have no connection to the parent SOUTH
+                        # than add the neighbor to the SOUTH of the group
+                        self.add_neighbor_north_south(group, neighbor)
+
+                    if neighbor.connected_parent_west and neighbor.connected_parent_east == 0 and group.connected_parent_west == 0:
+                        # the neighbor has a parent WEST connection but no parent EAST connection and the group herself has no parent WEST connection
+                        # than add
+                        self.add_neighbor_east_west(group, neighbor)
 
                     if neighbor.connected_parent_north and neighbor.connected_parent_south:
                         for block in group.neighbors[neighbor]:
@@ -519,37 +577,43 @@ class ForceAlgorithm(BaseOptimizer):
                     block.pos[0] = 0
                 else:
                     block.pos[0] = group.size_width / 2
-                print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "\n"
+
+                pins = ""
+                for p in block.pins.values():
+                    pins += " " + p.net
+                print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "Pins:", pins
 
             for child in group.childs:
                 # children connected to NORTH and SOUTH have position y = 0 and are tall as the group
                 if child in group.child_north and child in group.child_south:
-                    child.position_y = 0
-                    child.size_height = group.size_height
+                    child.position_y = group.size_height / 2 - child.size_height / 2
+                    #child.size_height = group.size_height
+
                 # children only connected to NORTH (not to SOUTH) have position y  = 0
                 elif child in group.child_north:
                     child.position_y = 0
+
                 # children only connected to SOUTH (not to NORTH) touching the lower bound of the group
                 elif child in group.child_south:
                     child.position_y = group.size_height - child.size_height
+
                 #children with no connection to NORTH or SOUTH
                 else:
                     #search for neighbors with north connection
                     #find the highest and set the child under that neighbor
                     max_height = 0
                     for neighbor in child.neighbors:
-                        if neighbor in group.child_north:
-                            max_height = neighbor.size_height
+                        if neighbor in group.child_north and max_height < neighbor.size_height:
+                            max_height = 0 + neighbor.size_height
                     if max_height:
                         child.position_y = max_height
                     else:
                         #no neighbor in North, so check South
                         #search for neighbors with south connection
                         #find the highest and set the child over that neighbor
-                        max_height = 0
                         for neighbor in child.neighbors:
-                            if neighbor in group.child_south:
-                                max_height = neighbor.size_height
+                            if neighbor in group.child_south and max_height < neighbor.size_height:
+                                max_height = 0 + neighbor.size_height
                         if max_height:
                             child.position_y = group.size_height - max_height - child.size_height
                         else:
@@ -559,8 +623,8 @@ class ForceAlgorithm(BaseOptimizer):
 
                 # children connected to WEST and EAST have position x = 0 and are wide as the group
                 if child in group.child_west and child in group.child_east:
-                    child.position_x = 0
-                    child.size_width = group.size_width
+                    child.position_x = group.size_width / 2 - child.size_width / 2
+                    #child.size_width = group.size_width
                 # children only connected to WEST (not to EAST) have position x  = 0
                 elif child in group.child_west:
                     child.position_x = 0
@@ -573,8 +637,8 @@ class ForceAlgorithm(BaseOptimizer):
                     #find the biggest and set the child right to that neighbor
                     max_width = 0
                     for neighbor in child.neighbors:
-                        if neighbor in group.child_west:
-                            max_width = neighbor.size_width
+                        if neighbor in group.child_west and max_width < neighbor.size_width:
+                            max_width = 0 + neighbor.size_width
                     if max_width:
                         child.position_x = max_width
                     else:
@@ -583,8 +647,8 @@ class ForceAlgorithm(BaseOptimizer):
                         #find the biggest and set the child left to that neighbor
                         max_width = 0
                         for neighbor in child.neighbors:
-                            if neighbor in group.child_east:
-                                max_width = neighbor.size_width
+                            if neighbor in group.child_east and max_width < neighbor.size_width:
+                                max_width = 0 + neighbor.size_width
                         if max_width:
                             child.position_x = group.size_width - max_width - child.size_width
                         else:
@@ -601,10 +665,12 @@ class ForceAlgorithm(BaseOptimizer):
         '''
         '''
         group_north.neighbor_south.append(group_south)
-        group_north.neighbor_unsorted.remove(group_south)
+        if group_south in group_north.neighbor_unsorted:
+            group_north.neighbor_unsorted.remove(group_south)
 
         group_south.neighbor_north.append(group_north)
-        group_south.neighbor_unsorted.remove(group_north)
+        if group_north in group_south.neighbor_unsorted:
+            group_south.neighbor_unsorted.remove(group_north)
 
         for child in group_north.childs:
             for child_neighbor in child.neighbors:
@@ -616,10 +682,12 @@ class ForceAlgorithm(BaseOptimizer):
         '''
         '''
         group_east.neighbor_west.append(group_west)
-        group_east.neighbor_unsorted.remove(group_west)
+        if group_west in group_east.neighbor_unsorted:
+            group_east.neighbor_unsorted.remove(group_west)
 
         group_west.neighbor_east.append(group_east)
-        group_west.neighbor_unsorted.remove(group_east)
+        if group_east in group_west.neighbor_unsorted:
+            group_west.neighbor_unsorted.remove(group_east)
 
         for child in group_east.childs:
             for child_neighbor in child.neighbors:

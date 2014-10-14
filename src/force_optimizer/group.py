@@ -83,7 +83,10 @@ class Group:
             self.neighbors[neighbor].append(block)
         else:
             self.neighbors[neighbor] = [block]
-            self.neighbor_unsorted.append(neighbor)
+            if neighbor.parent is self.parent:
+                self.neighbor_unsorted.append(neighbor)
+            else:
+                self.neighbor_extern.append(neighbor)
 
     def add_block(self,block):
         self.blocks.append(block)
@@ -101,8 +104,8 @@ class Group:
         # header (group_id + size + pos)
         o = "" + nl
         o += "+------------------------------------------" + nl
-        o += "| {}: {} - Size: {}x{} - Pos: {}x{}{}".format("Group", self.group_id, 
-                self.size_height, self.size_width,
+        o += "| {}: {} - Size: {}x{} - Pos: {}x{}{}".format("Group", self.group_id,
+                self.size_width, self.size_height,
                 self.position_x, self.position_y, nl, pad=less_padding)
         o += "+------------------------------------------" + nl
 
@@ -126,7 +129,7 @@ class Group:
         o += "|{:>{pad}}: {} {}".format("Connected to", ", ".join(_c), nl, pad=padding)
 
         # neighbor count
-        o += "|{:>{pad}}: ".format("Neighbors", pad=padding) 
+        o += "|{:>{pad}}: ".format("Neighbors", pad=padding)
         if len(self.neighbors) > 0:
             o += ", ".join(("{}x {}".format(len(v), k.group_id)) for k, v in self.neighbors.items())
         o += nl
@@ -141,6 +144,17 @@ class Group:
                 o += "|{:>{pad}}: {}{}".format(
                         direction, ", ".join(str(n.group_id) for n in data), nl, pad=more_padding)
 
+        # show unsorted neighbors
+        o += "|{:>{pad}}: ".format("Unsorted Neighbors", pad=padding)
+        o += "{}{}".format("", ", ".join(str(n.group_id) for n in self.neighbor_unsorted ), nl, pad=padding)
+        o +=  nl
+
+        # show extern neighbors
+        o += "|{:>{pad}}: ".format("Extern Neighbors", pad=padding)
+        o += "{}{}".format("", ", ".join(str(n.group_id) for n in self.neighbor_extern ), nl, pad=padding)
+        o +=  nl
+
+        '''
         # show parent's neighbor conns
         p_con_type = (("EAST", self.connected_parent_east),
                       ("WEST", self.connected_parent_west),
@@ -148,8 +162,21 @@ class Group:
                       ("SOUTH", self.connected_parent_south))
         o += "|{:>{pad}}  {}".format("Parent's neighbor", nl, pad=padding)
         o += "|{:>{pad}}: {}{}".format("connections",
-                ", ".join(("{0[0]}:{0[1]}".format(key)) for key in p_con_type if data), nl, pad=padding)
+                ", ".join(("{0[0]}:{0[1]}".format(key)) for key  in p_con_type if data), nl, pad=padding)
+        '''
 
+        # show parent's neighbor conns
+
+        o += "|{:>{pad}}  {}".format("Parent's neighbor", nl, pad=padding)
+
+        n_types = (("EAST", self.connected_parent_east),
+                   ("WEST", self.connected_parent_west),
+                   ("NORTH", self.connected_parent_north),
+                   ("SOUTH", self.connected_parent_south))
+        for direction, data in n_types:
+            if data:
+                o += "|{:>{pad}}: {}{}".format(
+                        direction, data, nl, pad=more_padding)
 
         # footer
         o += "+------------------------------------------" + nl
