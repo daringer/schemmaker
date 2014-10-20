@@ -49,7 +49,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         for block in self.force_algo.blocks:
             self.field.add_block(block, block.pos)
         '''
-
+    '''
     def test_force_algo(self):
         print "test_create_groups"
 
@@ -60,7 +60,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         # Check that both subgroups of the main group are neighbor
         self.assertTrue(self.force_algo.group_main.childs[0].are_neighbor(self.force_algo.group_main.childs[1]))
-
+    '''
     def test_import(self):
         print "test_import"
         self.test_data_dir = "../../testdata/"
