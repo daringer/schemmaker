@@ -40,6 +40,7 @@ class Block(object):
 
         self.pos = [-1, -1]
 
+
         # size-range: 2x2 to NxM, x and y must be even
         assert size[0] % 2 == 0 and size[1] % 2 == 0
         self.size = size
