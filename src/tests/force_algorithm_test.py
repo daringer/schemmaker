@@ -65,6 +65,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         print "test_import"
         self.test_data_dir = "../../testdata/"
         self.fn = "circuit_op8.vhdl"
+        #self.fn = "circuit_bi1_0op337_1.vhdl"        
         self.files = os.listdir(self.test_data_dir)
         path = os.path.join(self.test_data_dir, self.fn)
         output = parse(path)
@@ -82,7 +83,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         print path
 
         self.field = Field("test_circ", 40, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out'], [])
+        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out1'], ['out2'])
 
 
 if __name__ == '__main__':

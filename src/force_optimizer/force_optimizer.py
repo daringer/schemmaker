@@ -83,6 +83,10 @@ class ForceAlgorithm(BaseOptimizer):
         end = time.time()
         interval_initial_step = end - start
 
+        app1 = QtGui.QApplication(sys.argv)
+        ex1 = Example([self.group_main.position_x, self.group_main.position_y, self.group_main.size_width, self.group_main.size_height], "Main Step", self)
+        app1.exec_()
+        
 
         start = time.time()
         main_step.start(self)
@@ -99,10 +103,7 @@ class ForceAlgorithm(BaseOptimizer):
         print('main_step took %.03f sec.' % interval_main_step)
         print "============================================"
 
-        app1 = QtGui.QApplication(sys.argv)
-        ex1 = Example([self.group_main.position_x, self.group_main.position_y, self.group_main.size_width, self.group_main.size_height], "Main Step", self)
-        app1.exec_()
-
+        
 
 class Example(QtGui.QMainWindow):
 
