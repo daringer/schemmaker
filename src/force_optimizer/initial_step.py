@@ -404,10 +404,37 @@ def calculate_groups_position(forceOptimizer):
                         # overlapping is allowed and will be fixed in the force algorithm
                         child.position_x = group.size_width / 2 - child.size_width / 2
 
+    for group in groups:
+        for child in group.child_north:
+            if child not in group.child_east:
+                child.position_x = calculate_border_north_south_position(child, group.child_north)
+        for child in group.child_south:
+            if child not in group.child_east:
+                child.position_x = calculate_border_north_south_position(child, group.child_south)
 
+        for child in group.child_east:
+            if child not in group.child_south and child not in group.child_north:
+                child.position_y = calculate_border_east_west_position(child, group.child_east)
+        for child in group.child_west:
+            if child not in group.child_south and child not in group.child_north:
+                child.position_y = calculate_border_east_west_position(child, group.child_west)
 
     for group in groups:
         print group
+
+def calculate_border_north_south_position(group,neighbors):
+    right = group.parent.size_width
+    for neighbor in neighbors:
+        if neighbor.position_x > group.position_x:
+            right = right - neighbor.size_width
+    return right-group.size_width
+
+def calculate_border_east_west_position(group,neighbors):
+    down = group.parent.size_height
+    for neighbor in neighbors:
+        if neighbor.position_y > group.position_y:
+            down = down - neighbor.size_height
+    return down-group.size_height
 
 def add_neighbor_north_south( group_north, group_south):
     '''
