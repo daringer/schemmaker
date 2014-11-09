@@ -43,18 +43,26 @@ def create_groups(forceOptimizer):
 
         #check the connection to important pins
         for p in block.pins.values():
+
             for pin in forceOptimizer.pins_south:
                 if p.net.lower().startswith(pin):
                     group.connected_gnd += 1
-                    group.block_south.append(block)
+                    group.block_south.add(block)
+
             for pin in forceOptimizer.pins_north:
                 if p.net.lower().startswith(pin):
                     group.connected_vcc += 1
-                    group.block_north.append(block)
+                    group.block_north.add(block)
+
             for pin in forceOptimizer.pins_east:
                 if p.net.lower().startswith(pin):
                     group.connected_out += 1
-                    group.block_east.append(block)
+                    group.block_east.add(block)
+
+            for pin in forceOptimizer.pins_west:
+                if p.net.lower().startswith(pin):
+                    group.block_west.add(block)
+
             if p.net.lower().startswith("in"):
                 group.connected_inp
 

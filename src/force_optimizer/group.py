@@ -50,11 +50,11 @@ class Group:
         self.neighbors = {}
 
         #List with all elements in this group
-        self.blocks = []
-        self.block_north = []
-        self.block_south = []
-        self.block_west = []
-        self.block_east = []
+        self.blocks = set()
+        self.block_north = set()
+        self.block_south = set()
+        self.block_west = set()
+        self.block_east = set()
 
         #
         self.distance_to_out = 0
@@ -89,7 +89,7 @@ class Group:
                 self.neighbor_extern.append(neighbor)
 
     def add_block(self,block):
-        self.blocks.append(block)
+        self.blocks.add(block)
 
     def add_child(self, child):
         if self.childs.count(child) == 0:
@@ -120,7 +120,15 @@ class Group:
         o += "|{:>{pad}}: {}{}".format("Children", children, nl, pad=padding)
 
         o += "|{:>{pad}}: {}{}".format("Blocks", ", ".join(b.name for b in self.blocks), nl, pad=padding)
-
+        # list all blocks
+        n_types = (("EAST", self.block_east),
+                   ("WEST", self.block_west),
+                   ("NORTH", self.block_north),
+                   ("SOUTH", self.block_south))
+        for direction, data in n_types:
+            if len(data) > 0:
+                o += "|{:>{pad}}: {}{}".format(
+                        direction, ", ".join(str(n.name) for n in data), nl, pad=more_padding)
         # connected to which ports
         c_types = (("OUT", self.connected_out),
                    ("VDD", self.connected_vcc),
