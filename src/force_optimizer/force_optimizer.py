@@ -35,6 +35,10 @@ class ForceAlgorithm(BaseOptimizer):
 
         BaseOptimizer.__init__(self, field)
 
+        # flags
+        self.group_connected_to_parent_neighbor_set_parent_size = False
+
+
         self.groups = []
         self.blocks = blocks
         self.wide_search_index = 0
@@ -133,10 +137,7 @@ class Example(QtGui.QMainWindow):
             group.position_x = pos_x
             group.position_y = pos_y
 
-            for block in group.blocks:
 
-                label = QtGui.QLabel(block.name, self)
-                label.setGeometry(block.pos[0] * 50 + pos_x, block.pos[1] * 50 + pos_y, 50, 50)
 
         self.show()
 
@@ -153,36 +154,76 @@ class Example(QtGui.QMainWindow):
     def drawRectangles(self, qp):
         '''
         '''
-        color = QtGui.QColor(0, 0, 0)
-        qp.setPen(color)
+
+        qp.setPen(QtGui.QColor(0, 0, 0))
+        qp.setBrush(QtGui.QColor(255, 255, 255))
 
         for group in self.forceOptimizer.groups:
-
-            red = 255
-            green = 255
-            blue = 255
-            '''
-            if len(group.group_id) < 2:
-                red = (group.group_id[0] * 30) % 256
-            elif len(group.group_id) < 3:
-                red = (group.group_id[0] * 30) % 256
-                green = (group.group_id[1] * 30) % 256
-
-            else:
-                red = (group.group_id[0] * 10) % 256
-                green = (group.group_id[1] * 10) % 256
-                blue = (group.group_id[2] * 10) % 256
-            '''
-            qp.setBrush(QtGui.QColor(red, green, blue))
-
             qp.drawRect(group.position_x, group.position_y, group.size_width * 50, group.size_height * 50)
 
+        qp.setPen(QtGui.QColor(0, 0, 0))
+        qp.setBrush(QtGui.QColor(255, 255, 255))
+
+        for group in self.forceOptimizer.groups:
             for block in group.blocks:
 
-                qp.setBrush(QtGui.QColor(255, 255, 255))
                 qp.drawRect(block.pos[0] * 50 + group.position_x, block.pos[1] * 50 + group.position_y, 1 * 50, 1 * 50)
+                label = QtGui.QLabel(block.name, self)
+
+                label.setGeometry(block.pos[0] * 50 + group.position_x+5, block.pos[1] * 50 + group.position_y, 50, 50)
+                label.show()
+        '''
+        for group in self.forceOptimizer.groups:
+            print ""
+            print "Group:", group.group_id, " POS_X:", group.position_x, " POS_Y:", group.position_y
+
+            for block in group.blocks:
+                b_x = block.pos[0] * 50 + group.position_x + 25
+                b_y = block.pos[1] * 50 + group.position_y + 25
+                print ""
+                print "Block:", block.name, " POS_X:", b_x, " POS_Y:", b_y, "Pins:", block.pins.values()
+                neighbors = search_neighbors(block, self.forceOptimizer)
+
+                for neighbor in neighbors:
+
+                    neighbor_group = search_group(neighbor.groups, self.forceOptimizer)
+
+
+                    n_x = neighbor.pos[0] * 50 + neighbor_group.position_x + 25
+                    n_y = neighbor.pos[1] * 50 + neighbor_group.position_x + 25
+
+                    qp.drawLine(b_x, b_y, n_x, n_y)
+                    print "Neighbor:",neighbor.name , " POS_X:", n_x, " POS_Y:", n_y
+                    print "NeighborGroup:", neighbor_group.group_id, " POS_X:", neighbor_group.position_x, " POS_Y:", neighbor_group.position_y
+        '''
+def search_neighbors(block, forceOptimizer):
+    neighbors = {}
+    for pin in block.pins.values():
+        #print pin.net
+        if pin.net in forceOptimizer.dictionary_net_blocks:
+            for block_neighbor in forceOptimizer.dictionary_net_blocks[pin.net]:
+                if block is not block_neighbor:
+                    if block_neighbor not in neighbors:
+                        neighbors[block_neighbor] = 1
+                    else:
+                        value = neighbors[block_neighbor]
+                        value += 1
+                        neighbors[block_neighbor] = value
+    for neighbor in neighbors:
+        pass #print "Neighbor Block:", neighbor.name, "Group:", str(neighbor.groups)
+    return neighbors
 
 
 
 
 
+def search_group(group_id, forceOptimizer):
+    '''
+    PARAMETER:  group_ids     is an array with the IDs of the parent Groups and the ID of the searched group
+                return        the group if it exists, else None
+    STATE:      not finish
+    '''
+    for group in forceOptimizer.groups:
+        if group.group_id == group_id:
+            return group
+    return None

@@ -12,15 +12,17 @@ from parsers.vhdl import parse_vhdl as parse
 class ForceAlgorithmUnitTest(unittest.TestCase):
 
     def setUp(self):
+        pass
+
+    def test_simple(self):
         self.raw_data = [
-            {'conns': ['net2', 'inp1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
-            {'conns': ['out1', 'inp2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
-            #{'conns': ['net2', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
-            #{'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
+
+            {'conns': ['net2', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
+            {'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
             {'conns': ['vdd', 'vbias1', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0, 0], 'pos': (4,0), 'rot': 0, 'mir': True},
             {'conns': ['net2', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm4',  'groups': [0, 1], 'pos': (4,8), 'rot': 0, 'mir': False},
-            #{'conns': ['out1', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
-            {'conns': ['outp', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
+            {'conns': ['out1', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
+
             {'conns': ['vbias1', 'vbias1', 'vdd'],    'type': 'pmos',       'name': 'm6',  'groups': [1, 0], 'pos': (2,0), 'rot': 2, 'mir': False},
             {'conns': ['vbias2', 'vbias2', 'vbias1'], 'type': 'pmos',       'name': 'm7',  'groups': [1, 0], 'pos': (2,2), 'rot': 2, 'mir': False},
             {'conns': ['vdd', 'vbias3'],              'type': 'idc',        'name': 'i2',  'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
@@ -29,7 +31,13 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             {'conns': ['vbias4', 'vbias4', 'gnd'],    'type': 'nmos',       'name': 'm10', 'groups': [1, 0], 'pos': (0,8), 'rot': 0, 'mir': False},
             {'conns': ['net3', 'vbias4', 'gnd'],      'type': 'nmos',       'name': 'm11', 'groups': [1, 0], 'pos': (2,8), 'rot': 0, 'mir': True},
         ]
-        '''
+
+        self.raw_data_easy = [
+
+            {'conns': ['gnd', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0], 'pos': (4,4), 'rot': 2, 'mir': False},
+            {'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0], 'pos': (6,4), 'rot': 2, 'mir': True},
+            {'conns': ['vdd', 'in2', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0], 'pos': (4,0), 'rot': 0, 'mir': True},
+        ]
         self.blocks = []
         self.field = Field("test_circ", 40, 40)
 
@@ -48,8 +56,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         for block in self.force_algo.blocks:
             self.field.add_block(block, block.pos)
-        '''
-    '''
+
     def test_force_algo(self):
         print "test_create_groups"
 
@@ -60,7 +67,10 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         # Check that both subgroups of the main group are neighbor
         self.assertTrue(self.force_algo.group_main.childs[0].are_neighbor(self.force_algo.group_main.childs[1]))
-    '''
+
+
+
+
     def test_import(self):
         print "test_import"
         self.test_data_dir = "../../testdata/"

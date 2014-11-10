@@ -181,20 +181,20 @@ def sort_unsorted_neighbor( east_list):
                     # than add
                     add_neighbor_east_west(group, neighbor)
 
-                if neighbor.connected_parent_north and neighbor.connected_parent_south:
+                if neighbor.connected_parent_north and neighbor.connected_parent_south and len(group.blocks) and len(neighbor.blocks):
                     for block in group.neighbors[neighbor]:
-                        group.block_west.append(block)
+                        group.block_west.add(block)
 
                     for block in neighbor.neighbors[group]:
-                        neighbor.block_east.append(block)
+                        neighbor.block_east.add(block)
 
 
-                if neighbor.connected_parent_north and neighbor.connected_parent_south == 0 and group.connected_parent_north == 0:
+                if neighbor.connected_parent_north and neighbor.connected_parent_south == 0 and group.connected_parent_north == 0 and len(group.blocks) and len(neighbor.blocks):
                     for block in neighbor.neighbors[group]:
-                        neighbor.block_south.append(block)
+                        neighbor.block_south.add(block)
 
                     for block in group.neighbors[neighbor]:
-                        group.block_north.append(block)
+                        group.block_north.add(block)
 
         print group
 
@@ -241,20 +241,10 @@ def calculate_groups_frame(forceOptimizer):
         height_west = 0
 
         if len(group.blocks) > 0:
-            height_east = group.connected_out
-            height_west = group.connected_inp
-            width_south = group.connected_gnd
-            width_north = group.connected_vcc
-
-            for extern in group.neighbor_extern:
-                if extern.parent in group.parent.neighbor_north:
-                    width_north += len(group.neighbors[extern])
-                if extern.parent in group.parent.neighbor_south:
-                    width_south += len(group.neighbors[extern])
-                if extern.parent in group.parent.neighbor_west:
-                    height_west += len(group.neighbors[extern])
-                if extern.parent in group.parent.neighbor_east:
-                    height_east += len(group.neighbors[extern])
+            width_north += len(group.block_north)
+            width_south += len(group.block_south)
+            height_west += len(group.block_west)
+            height_east += len(group.block_east)
 
         if len(group.childs) > 0:
             for child in group.child_east:
@@ -278,6 +268,20 @@ def calculate_groups_frame(forceOptimizer):
             group.size_height = group.size_height + 1
 
         print group
+
+    if forceOptimizer.group_connected_to_parent_neighbor_set_parent_size:
+        forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
+        groups = forceOptimizer.groups[:]
+        groups.insert(0, forceOptimizer.group_main)
+
+        #go through every group
+        for group in groups:
+            if group.connected_parent_north and group.connected_parent_south:
+                group.size_height = group.parent.size_height
+            if group.connected_parent_east and group.connected_parent_west:
+                group.size_width = group.parent.size_width
+
+
 
 def calculate_groups_position(forceOptimizer):
     '''
@@ -400,10 +404,37 @@ def calculate_groups_position(forceOptimizer):
                         # overlapping is allowed and will be fixed in the force algorithm
                         child.position_x = group.size_width / 2 - child.size_width / 2
 
+    for group in groups:
+        for child in group.child_north:
+            if child not in group.child_east:
+                child.position_x = calculate_border_north_south_position(child, group.child_north)
+        for child in group.child_south:
+            if child not in group.child_east:
+                child.position_x = calculate_border_north_south_position(child, group.child_south)
 
+        for child in group.child_east:
+            if child not in group.child_south and child not in group.child_north:
+                child.position_y = calculate_border_east_west_position(child, group.child_east)
+        for child in group.child_west:
+            if child not in group.child_south and child not in group.child_north:
+                child.position_y = calculate_border_east_west_position(child, group.child_west)
 
     for group in groups:
         print group
+
+def calculate_border_north_south_position(group,neighbors):
+    right = group.parent.size_width
+    for neighbor in neighbors:
+        if neighbor.position_x > group.position_x:
+            right = right - neighbor.size_width
+    return right-group.size_width
+
+def calculate_border_east_west_position(group,neighbors):
+    down = group.parent.size_height
+    for neighbor in neighbors:
+        if neighbor.position_y > group.position_y:
+            down = down - neighbor.size_height
+    return down-group.size_height
 
 def add_neighbor_north_south( group_north, group_south):
     '''
