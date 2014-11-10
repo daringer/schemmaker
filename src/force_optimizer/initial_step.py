@@ -10,11 +10,16 @@ def start(forceOptimizer):
 
     # the main group is the only group on the highest level, so the queue starts with her
     forceOptimizer.wide_search_queue.append(forceOptimizer.group_main)
+
     wide_search(forceOptimizer)
+
+    set_block_relation_to_group(forceOptimizer)
 
     calculate_groups_frame(forceOptimizer)
 
     calculate_groups_position(forceOptimizer)
+
+
 
 def wide_search(forceOptimizer):
     '''
@@ -180,7 +185,7 @@ def sort_unsorted_neighbor( east_list):
                     # the neighbor has a parent WEST connection but no parent EAST connection and the group herself has no parent WEST connection
                     # than add
                     add_neighbor_east_west(group, neighbor)
-
+                '''
                 if neighbor.connected_parent_north and neighbor.connected_parent_south and len(group.blocks) and len(neighbor.blocks):
                     for block in group.neighbors[neighbor]:
                         group.block_west.add(block)
@@ -195,7 +200,7 @@ def sort_unsorted_neighbor( east_list):
 
                     for block in group.neighbors[neighbor]:
                         group.block_north.add(block)
-
+                '''
         print group
 
 def group_compare(x, y):
@@ -211,6 +216,83 @@ def group_compare_negative(x, y):
     groups on the high level with short IDs came first
     '''
     return len(x.group_id) - len(y.group_id)
+
+def search_group(group_id,forceOptimizer):
+    '''
+    PARAMETER:  group_ids     is an array with the IDs of the parent Groups and the ID of the searched group
+                return        the group if it exists, else None
+    STATE:      not finish
+    '''
+    for group in forceOptimizer.groups:
+        if group.group_id == group_id:
+            return group
+    return None
+
+def set_block_relation_to_group(forceOptimizer):
+    print ""
+    print "============="
+    print "Block relation to group"
+    print "============="
+    print ""
+
+    for block in forceOptimizer.blocks:
+        print "BLOCK:",block.name
+        group = search_group(block.groups, forceOptimizer)
+        print "Group:", group.group_id
+
+        for key in forceOptimizer.dictionary_net_blocks:
+
+            if block in forceOptimizer.dictionary_net_blocks[key]:
+                print "Net:", key
+                for neighbor in forceOptimizer.dictionary_net_blocks[key]:
+                    print "Block_Neighbor:", neighbor.name
+
+                    if neighbor != block and neighbor.groups != block.groups:
+                        group_neighbor = search_group(neighbor.groups, forceOptimizer)
+                        print "Group_Neighbor:", group_neighbor.group_id
+                        #intern group_neighbors
+                        if group_neighbor in group.neighbor_north:
+
+                            group.block_north.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+
+                        if group_neighbor in group.neighbor_south:
+
+                            group.block_south.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+
+                        if group_neighbor in group.neighbor_east:
+
+                            group.block_east.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+
+                        if group_neighbor in group.neighbor_west:
+
+                            group.block_west.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+
+                        #extern group_neighbors
+                        if group_neighbor.parent in group.parent.neighbor_north:
+                            group.block_north.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+
+                        if group_neighbor.parent in group.parent.neighbor_south:
+
+                            group.block_south.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+
+                        if group_neighbor.parent in group.parent.neighbor_east:
+
+                            group.block_east.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+
+                        if group_neighbor.parent in group.parent.neighbor_west:
+
+                            group.block_west.add(block)
+                            print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+        print ""
+    for group in forceOptimizer.groups:
+        print group
 
 def calculate_groups_frame(forceOptimizer):
     '''
@@ -260,6 +342,9 @@ def calculate_groups_frame(forceOptimizer):
         #the bigger width of north and south is the width for the group
         group.size_width = max({width_north, width_south})
         group.size_height = max({height_east, height_west})
+        # only for low level groups
+        if len(group.blocks) > 0:
+            group.size_height = group.size_height * 2
 
         #if the group area is to small to place all blocks without overlapping
         while (group.size_height * group.size_width) < len(group.blocks):
@@ -452,6 +537,8 @@ def add_neighbor_north_south( group_north, group_south):
             if child_neighbor.parent is group_south:
                 child.connected_parent_south = child_neighbor.connected_parent_south + 1
                 child_neighbor.connected_parent_north = child_neighbor.connected_parent_north + 1
+
+
 
 def add_neighbor_east_west( group_east, group_west):
     '''
