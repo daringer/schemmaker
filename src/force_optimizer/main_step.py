@@ -41,12 +41,13 @@ def search_neighbors(block, forceOptimizer):
 
 def calculate_zft_position(forceOptimizer):
     turn = 0
-    while (turn != 12):
+    while (turn != 18):
         print "TURN:", turn
 
 
 
         if turn % 3 == 0:
+            # free block turn
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
                 neighbors = search_neighbors(block, forceOptimizer)
