@@ -18,6 +18,7 @@ import build_step
 import initial_step
 import main_step
 import time
+import last_step
 
 MAIN_GRP = -4
 OUT_GRP = -1
@@ -93,6 +94,11 @@ class ForceAlgorithm(BaseOptimizer):
         end = time.time()
         interval_main_step = end - start
 
+        start = time.time()
+        last_step.start(self)
+        end = time.time()
+        interval_last_step = end - start
+
         print "============================================"
         print('build_step took %.03f sec.' % interval_build_step)
         print "============================================"
@@ -101,6 +107,9 @@ class ForceAlgorithm(BaseOptimizer):
         print "============================================"
         print "============================================"
         print('main_step took %.03f sec.' % interval_main_step)
+        print "============================================"
+        print "============================================"
+        print('last_step took %.03f sec.' % interval_last_step)
         print "============================================"
 
         app1 = QtGui.QApplication(sys.argv)
