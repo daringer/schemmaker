@@ -23,7 +23,7 @@ def parse_vhdl(data_path):
             if "generic" in line:
                 inside_generic_map = True
             
-            if inside_generic_map and ")" in line:
+            if inside_generic_map and ")" in line and not "(" in line:
                 inside_generic_map = False
                 continue
             
