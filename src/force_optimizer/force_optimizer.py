@@ -167,7 +167,8 @@ class Example(QtGui.QMainWindow):
 
         for group in self.forceOptimizer.groups:
             for block in group.blocks:
-
+    
+                print "POOOOS:" , block.pos
                 qp.drawRect(block.pos[0] * self.block_size + group.position_x, block.pos[1] * self.block_size + group.position_y, 1 * self.block_size, 1 * self.block_size)
                 label = QtGui.QLabel(block.name, self)
 
