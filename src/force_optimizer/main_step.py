@@ -308,7 +308,8 @@ def sum_calculate_east_west_group(group):
 
 def sum_calculate_free_group(group):
     '''
-    weight =
+    weight  = 1 between free blocks
+            = 3 between border blocks
     '''
 
     count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
@@ -356,17 +357,20 @@ def sum_calculate_free(block, neighbors, group):
 
         for neighbor in neighbors:
 
+            weight = neighbors[neighbor]
+            if neighbor in group.block_east or neighbor in group.block_west or neighbor in group.block_south or neighbor in group.block_north:
+                weight = 5
             if neighbor is not block:
                 if neighbor.pos[0] < block.pos[0]:
-                    x += neighbors[neighbor] * (neighbor.pos[0] + 1)
+                    x += weight * (neighbor.pos[0] + 1)
                 else:
-                    x += neighbors[neighbor] * (neighbor.pos[0] - 1)
+                    x += weight * (neighbor.pos[0] - 1)
                 if neighbor.pos[1] < block.pos[1]:
-                    y += neighbors[neighbor] * (neighbor.pos[1] - 1)
+                    y += weight * (neighbor.pos[1] - 1)
                 else:
-                    y += neighbors[neighbor] * (neighbor.pos[1] + 1)
+                    y += weight * (neighbor.pos[1] + 1)
 
-            div += neighbors[neighbor]
+            div += weight
 
         x /= div
         y /= div
