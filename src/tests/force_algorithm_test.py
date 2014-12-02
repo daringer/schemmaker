@@ -80,6 +80,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         #self.fn = "circuit_bi1_0op324_2.vhdl"
         
         self.files = os.listdir(self.test_data_dir)
+
         path = os.path.join(self.test_data_dir, self.fn)
         output = parse(path)
 

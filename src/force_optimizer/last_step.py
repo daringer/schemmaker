@@ -74,7 +74,7 @@ def start (forceOptimizer):
 
         for block in inner_blocks:
 
-            new_y = round(block.pos[1])
+            new_y = int(round(block.pos[1]))
             print "Block:", block.name, " y:",block.pos[1], "newY:", new_y
 
             if new_y > field_max_y:
@@ -83,14 +83,25 @@ def start (forceOptimizer):
                 new_y = field_min_y
 
             no_position = True
-            position = freeField_height-1
-            while(no_position):
-                if rows[position] < freeField_width:
-                    rows[position] += 1
-                    block.pos[1] = position
-                    no_position = False
-                else:
-                    position -= 1
+            max_position = 0
+            if group.size_height > 2:
+                max_position = freeField_height-2
+            else:
+                max_position = freeField_height-1
+
+
+
+            if rows[new_y] < freeField_width:
+                rows[new_y] += 1
+                block.pos[1] = new_y
+
+            elif rows[new_y-1] < freeField_width and new_y-1 > 0:
+                rows[new_y-1] += 1
+                block.pos[1] = new_y-1
+
+            elif rows[new_y + 1] < freeField_width and new_y+1 < max_position:
+                rows[new_y + 1] += 1
+                block.pos[1] = new_y+1
 
             print "Block:", block.name, " y:",block.pos[1]
 
@@ -103,23 +114,85 @@ def start (forceOptimizer):
 
         for block in inner_blocks:
 
-            new_x = round(block.pos[0])
+            new_x = int(round(block.pos[0]))
             print "Block:", block.name, " x:",block.pos[0], "newX:", new_x
 
-            if new_x > field_max_x:
-                new_x = field_max_x
-            if new_x < field_min_x:
-                new_x = field_min_x
+            if new_x > len(columns):
+                new_x = len(columns)-1
+            if new_x < 1:
+                new_x = 1
 
             no_position = True
-            position = freeField_width-1
+            max_position = 0
+            if group.size_width > 2:
+                max_position = freeField_width-2
+            else:
+                max_position = freeField_width-1
+
+
+            if columns[new_x] < freeField_height:
+                columns[new_x] += 1
+                block.pos[0] = new_x
+
+            elif rows[new_x-1] < freeField_height and new_x-1 > 0:
+                rows[new_x-1] += 1
+                block.pos[1] = new_x-1
+
+            elif rows[new_x+1] < freeField_height and new_x+1 < max_position:
+                rows[new_x+1] += 1
+                block.pos[1] = new_x+1
+
+            block_pos = []
+            for neighbor in group.blocks:
+                block_pos.append(block.pos)
+
             while(no_position):
-                if columns[position] < freeField_height:
-                    columns[position] += 1
-                    block.pos[0] = position
-                    no_position = False
-                else:
-                    position -= 1
+                no_position = False
+                catch = False
+                for neighbor in group.blocks:
+                    if neighbor is not block:
+                        if block.pos == neighbor.pos:
+                            print "double position:",block.name, ", ", neighbor.name, " Pos:",block.pos
+                            no_position = True
+                            j = -1
+                            i = -1
+                            c = 0
+                            r = 0
+                            for row in rows:
+
+                                for column in columns:
+
+                                    new_pos = [block.pos[0], block.pos[1]]
+                                    pos_x = block.pos[0] + c * i
+                                    pos_y = block.pos[1] + r * j
+
+                                    if pos_x < 0 :
+                                        pos_x = 0
+                                    if pos_x >= group.size_width:
+                                        pos_x = group.size_width - 1
+                                    new_pos[0] = pos_x
+
+                                    if pos_y < 0 :
+                                        pos_y = 0
+                                    if pos_y >= group.size_height:
+                                        pos_y = group.size_height - 1
+                                    new_pos[1] = pos_y
+                                    print "New Pos:", new_pos
+
+                                    if j > 0:
+                                        c += 1
+                                    j *= -1
+                                    if new_pos not in block_pos:
+                                        block.pos = new_pos
+                                        block_pos.append(block.pos)
+                                        catch = True
+                                    if catch :
+                                        break
+                                if catch:
+                                    break
+                                if i > 0:
+                                    r += 1
+                                i *= -1
 
             print "Block:", block.name, " x:",block.pos[0]
 
