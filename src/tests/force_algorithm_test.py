@@ -74,10 +74,11 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def test_import(self):
         print "test_import"
         self.test_data_dir = "../../testdata/"
-        #self.fn = "circuit_op8.vhdl"
+        self.fn = "circuit_op8.vhdl"
         #self.fn = "circuit_bi1_0op324_0.vhdl"
-        self.fn = "circuit_bi1_0op324_2.vhdl"
-        self.files = os.listdir(self.test_data_dir)
+        #self.fn = "circuit_bi1_0op324_2.vhdl"
+        #self.fn = "circuit_bi1_0op330_1.vhdl"
+        #self.files = os.listdir(self.test_data_dir)
         path = os.path.join(self.test_data_dir, self.fn)
         output = parse(path)
 
