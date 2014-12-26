@@ -82,14 +82,14 @@ class FieldRowNotEmpty(FieldPosException):
 
 
 
-class FieldNode:
+class FieldNode(object):
     def __init__(self, name, pos):
         self.x = pos[0]
         self.y = pos[1]
         self.names = name and [name]
  
 
-class Field:
+class Field(object):
     def __init__(self, cid, nx, ny):
         # circuit id
         self.circuit_id = cid
@@ -108,12 +108,8 @@ class Field:
         # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
         # wiring related datastructures
-        self.wires = []
-        self.wire_dots = []
-        self.open_dots = []
-        self.output_dots = []
-        self.net_forbidden_pos = {}
-        
+        self.clear_wires() 
+
     ############################################################################
     ### Cleanup/copy and clear Field
     ############################################################################        
@@ -121,8 +117,10 @@ class Field:
         """Clear field from wires and related"""
         self.wires = []
         self.wire_dots = []
-        self.open_dots = []
-        self.output_dots = []
+        self.input_dots = set()
+        self.input_nets = set()
+        self.output_dots = set()
+        self.output_nets = set()
         self.net_forbidden_pos = {}
 
     def clear(self):
@@ -217,10 +215,10 @@ class Field:
             if len(out) > 0:
                 yield active_one, out
                 
-    def iter_wire(self):
+    def iter_wire(self, scaling=1):
         """Iterate over all 'wire-dots'"""
-        for x in xrange(self.nx + 1):
-            for y in xrange(self.ny + 1):
+        for x in xrange(self.nx*scaling + 1):
+            for y in xrange(self.ny*scaling + 1):
                 yield (x, y)
 
     def iter_area_pos(self, pos=(0, 0), size=(2, 2)):
@@ -270,12 +268,33 @@ class Field:
         elif not self.is_block_free(pos):
             raise FieldSpaceOccupied(pos)
         
+        block.pos = pos
+
         for x, y in self.iter_area_pos(pos, block.size):
             self.xy2block[(x, y)] = block
             self.yx2block[(y, x)] = block
-        
+
         self.block2xy[block] = pos
         self.block2yx[block] = (pos[1], pos[0])
+
+        self.output_nets.update(block.output_nets)
+        self.input_nets.update(block.input_nets)
+
+        # calc x: max(x-values) y: (sum of all y) / (num items)
+        if len(self.output_nets) > 0:
+            pos = ((max(self.output_nets, key=lambda x: x[0])[0], 
+                    sum([x[1] for x in self.output_nets]) / len(self.output_nets)))
+            self.output_dots.clear()
+            self.output_dots.add( (3, pos, "OUT") )
+
+        assert all(len(x) == 3 for x in self.output_dots)
+
+        if len(self.input_nets) > 0:
+            for pos in self.input_nets:
+                self.input_dots.add( (-1, pos, "IN?") )
+
+        assert all(len(x) == 3 for x in self.input_dots)
+
         return True
     
     def remove_pos(self, pos):
@@ -402,6 +421,13 @@ class Field:
             
         return good
     
+    # seems not to work!????? or just badly, need to recalculated output/input-dots
+    def expand_field(self, amount, stepping=2, offset=(0,0)):
+        for xidx in xrange(self.nx, offset[0], -stepping):
+            assert self.insert_col(xidx, amount)
+        for yidx in xrange(self.ny, offset[1], -stepping):
+            assert self.insert_row(yidx, amount)
+
     def remove_row(self, which_y, height=2):
         """
         Remove row from field

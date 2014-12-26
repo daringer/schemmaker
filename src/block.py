@@ -32,6 +32,8 @@ class Block(object):
     has_vdd = property(lambda s: any(p.supply for p in s.pins.values()))
     has_gnd = property(lambda s: any(p.gnd for p in s.pins.values()))
     is_biased = property(lambda s: any(p.biased for p in s.pins.values()))
+    input_nets = property(lambda s: set(p.blk_pos for p in s.pins.values() if p.input))
+    output_nets = property(lambda s: set(p.blk_pos for p in s.pins.values() if p.output))
 
     def __init__(self, b_type, pins=None, name=None, groups=None, size=(2, 2), parent=None):
         self.type = b_type
@@ -59,15 +61,24 @@ class Block(object):
         self.rotation = 0
         self.__rot_origin = (self.size[0]/2, self.size[1]/2)
 
+
         if pins is not None:
-            self.pins[(1, 0)] = Pin(self, pins[0], (1, 0), False, True)
+            self.pins[(1, 0)] = Pin(self, pins[0], (1, 0), False, True, 
+                    True if pins[0].startswith("out") else False,
+                    True if pins[0].startswith("in") else False)
             # mos-device
             if len(pins) == 3:
-                self.pins[(2, 1)] = Pin(self, pins[1], (2, 1), True, False)
-                self.pins[(1, 2)] = Pin(self, pins[2], (1, 2), False, True)
+                self.pins[(2, 1)] = Pin(self, pins[1], (2, 1), True, False, 
+                    True if pins[1].startswith("out") else False,
+                    True if pins[1].startswith("in") else False)
+                self.pins[(1, 2)] = Pin(self, pins[2], (1, 2), False, True, 
+                    True if pins[2].startswith("out") else False,
+                    True if pins[2].startswith("in") else False)
             # two-port device
             else:
-                self.pins[(1, 2)] = Pin(self, pins[1], (1, 2), False, True)
+                self.pins[(1, 2)] = Pin(self, pins[1], (1, 2), False, True, 
+                    True if pins[1].startswith("out") else False,
+                    True if pins[1].startswith("in") else False)
 
 
         # TODOOOOO!!!
@@ -170,11 +181,12 @@ class Block(object):
         for i, p in self.pins.items():
             if p.pos == (0, 1):
                 p.pos = (2, 1)
-                continue
-
-            if p.pos == (2, 1):
+                del self.pins[(0, 1)]   
+                self.pins[(2, 1)] = p
+            elif p.pos == (2, 1):
                 p.pos = (0, 1)
-                continue
+                del self.pins[(2, 1)]
+                self.pins[(0, 1)] = p
         return True
 
     # also derivation candidate!
