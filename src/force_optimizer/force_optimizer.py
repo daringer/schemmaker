@@ -103,6 +103,9 @@ class ForceAlgorithm(BaseOptimizer):
             self._timeit(last_step.start, self, debug)
 
     def get_debug_field(self):
+        # HELP ME, UUGLYYY :)))) but works!
+        blksize = 2
+
         # calc grp positions // kinda ugly ;D
         # feels like I need to do a breadth-first search to correctly 
         # inherit from top-lvl-grp downwards!
@@ -114,8 +117,8 @@ class ForceAlgorithm(BaseOptimizer):
             for g in self.groups:
                 if next_grp == g.parent.group_id[0]:
                     grp2pos[g] = (
-                        g.position_x * g.size_width + g.parent.position_x,
-                        g.position_y * g.size_height + g.parent.position_y 
+                        g.position_x * g.size_width + g.parent.position_x * 2,
+                        g.position_y * g.size_height + g.parent.position_y * 2
                     )
                     next_stack.extend(grp.group_id[0] for grp in g.childs)
             
