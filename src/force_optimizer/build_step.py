@@ -2,29 +2,33 @@ from group import Group
 import itertools
 
 
-def start(force_algo):
+def start(force_algo, debug=False):
 
-    create_groups(force_algo)
+    create_groups(force_algo, debug)
 
-    for group in force_algo.groups:
-        print group
+    if debug:
+        for group in force_algo.groups:
+            print group
 
-    find_neighbors(force_algo)
+    find_neighbors(force_algo, debug)
 
-    for group in force_algo.groups:
-        print group
+    if debug:
+        for group in force_algo.groups:
+            print group
 
 
-def create_groups(forceOptimizer):
+def create_groups(forceOptimizer, debug=False):
     '''
     DESCRIPTION:   Create the groups and add them to the list: groups
     STATE:         finish
     '''
-    print ""
-    print "============="
-    print "Create Groups"
-    print "============="
-    print ""
+
+    if debug:
+        print ""
+        print "============="
+        print "Create Groups"
+        print "============="
+        print ""
 
     #go through all blocks in circuit
     for block in forceOptimizer.blocks:
@@ -33,11 +37,13 @@ def create_groups(forceOptimizer):
         pins = ""
         for p in block.pins.values():
             pins += " " + p.net
-        print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
+        if debug:
+            print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
         group = search_group(group_id,forceOptimizer)  # check if the group allready exists
 
         if group is None:  # create a new group if needed
-            print ("Create a new Group with ID", group_id)
+            if debug:
+                print ("Create a new Group with ID", group_id)
             group = Group(group_id)
             forceOptimizer.groups.append(group)
 
@@ -78,13 +84,13 @@ def create_groups(forceOptimizer):
 
         #if group has parents create them
         if len(group_id) > 1:
-            create_parent(group,forceOptimizer)
+            create_parent(group,forceOptimizer, debug)
         #else add group to main group
         else:
             forceOptimizer.group_main.add_child(group)
             group.parent = forceOptimizer.group_main
 
-def search_group(group_id,forceOptimizer):
+def search_group(group_id, forceOptimizer):
     '''
     PARAMETER:  group_ids     is an array with the IDs of the parent Groups and the ID of the searched group
                 return        the group if it exists, else None
@@ -95,7 +101,7 @@ def search_group(group_id,forceOptimizer):
             return group
     return None
 
-def create_parent(child,forceOptimizer):
+def create_parent(child, forceOptimizer, debug):
     '''
     DESCRIPTION:    builds recursive the parents of the groupe, which containts the block
                     when the algo reached the last parent, it will add them to the main group
@@ -103,18 +109,21 @@ def create_parent(child,forceOptimizer):
     STATE:          finish
     '''
 
-    print "create parent for child:", child.group_id
+    if debug:
+        print "create parent for child:", child.group_id
 
     group_id = child.group_id[:len(child.group_id) - 1]  # remove the last ID
 
-    print "parents ID:", group_id
+    if debug:
+        print "parents ID:", group_id
 
     group = search_group(group_id,forceOptimizer)  # check if the group allready exists
 
     if group is None:  # create a new group if needed
         group = Group(group_id)
         forceOptimizer.groups.append(group)
-        print "Parent not exist, create a new Group"
+        if debug:
+            print "Parent not exist, create a new Group"
 
     group.add_child(child)
     child.parent = group
@@ -137,27 +146,28 @@ def create_parent(child,forceOptimizer):
 
     #if group has parents create them
     if len(group_id) > 1:
-        create_parent(group, forceOptimizer)
+        create_parent(group, forceOptimizer, debug)
     #else add group to main group
     else:
         forceOptimizer.group_main.add_child(group)
         group.parent = forceOptimizer.group_main
 
 
-def find_neighbors(forceOptimizer):
+def find_neighbors(forceOptimizer, debug):
     '''
     DESCRIPTION:    Looking for the neighbors of the groups via pins information of the blocks
     STATE:          not finish
     '''
-    print ""
-    print "=============="
-    print "Find Neighbors"
-    print "=============="
-    print ""
+    if debug:
+        print ""
+        print "=============="
+        print "Find Neighbors"
+        print "=============="
+        print ""
 
-    print "------"
-    print "Step 1"
-    print "------"
+        print "------"
+        print "Step 1"
+        print "------"
 
     # go through all blocks in the circuit
     for block in forceOptimizer.blocks:
@@ -174,20 +184,22 @@ def find_neighbors(forceOptimizer):
                 # create a block list with one element
                 else:
                     forceOptimizer.dictionary_net_blocks[pin.net] = [block]
-
-    print "------"
-    print "Step 2"
-    print "------"
+    if debug:
+        print "------"
+        print "Step 2"
+        print "------"
     # go over all collected nets
     for key in forceOptimizer.dictionary_net_blocks.keys():
 
         # get the list with the blocks connected to the net
         block_list = forceOptimizer.dictionary_net_blocks[key]
-        print key, "Count Blocks:", len(block_list)
+        if debug:
+            print key, "Count Blocks:", len(block_list)
         # compare the blocks in the list
 
         for block_1, block_2 in itertools.combinations(block_list, 2):
-            print "Block1:", block_1.name, "Block2:", block_2.name
+            if debug:
+                print "Block1:", block_1.name, "Block2:", block_2.name
             group_1_id = []
             group_2_id = []
 
@@ -195,7 +207,8 @@ def find_neighbors(forceOptimizer):
             for i in range(len(block_1.groups)):
                 group_1_id.append(block_1.groups[i])
                 group_2_id.append(block_2.groups[i])
-                print "Group1ID:", group_1_id, "Group2ID", group_2_id
+                if debug:
+                    print "Group1ID:", group_1_id, "Group2ID", group_2_id
                 # compare the group IDs and when they are different
                 # then connect the groups with each other
                 if group_1_id != group_2_id:

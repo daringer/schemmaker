@@ -162,7 +162,6 @@ class Group:
         o += "{}{}".format("", ", ".join(str(n.group_id) for n in self.neighbor_extern ), nl, pad=padding)
         o +=  nl
 
-        '''
         # show parent's neighbor conns
         p_con_type = (("EAST", self.connected_parent_east),
                       ("WEST", self.connected_parent_west),
@@ -170,21 +169,8 @@ class Group:
                       ("SOUTH", self.connected_parent_south))
         o += "|{:>{pad}}  {}".format("Parent's neighbor", nl, pad=padding)
         o += "|{:>{pad}}: {}{}".format("connections",
-                ", ".join(("{0[0]}:{0[1]}".format(key)) for key  in p_con_type if data), nl, pad=padding)
-        '''
-
-        # show parent's neighbor conns
-
-        o += "|{:>{pad}}  {}".format("Parent's neighbor", nl, pad=padding)
-
-        n_types = (("EAST", self.connected_parent_east),
-                   ("WEST", self.connected_parent_west),
-                   ("NORTH", self.connected_parent_north),
-                   ("SOUTH", self.connected_parent_south))
-        for direction, data in n_types:
-            if data:
-                o += "|{:>{pad}}: {}{}".format(
-                        direction, data, nl, pad=more_padding)
+                ", ".join(("{}:{}".format(key, data)) \
+                          for key, data in p_con_type if data), nl, pad=padding)
 
         # footer
         o += "+------------------------------------------" + nl

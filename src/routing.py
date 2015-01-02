@@ -16,29 +16,42 @@ class RoutingException(FieldException):
 class Routing:
     dirs = list(((0, -1), (0, 1), (-1, 0), (1, 0)))
     
-    def __init__(self, field):
+    def __init__(self, field, scaling=4):
         self.field = field
         self.net_forbidden_pos = {}
+        self.scaling = scaling
+
+    def scale_up(self, pos, scaling):
+        x, y = pos
+        return (x*scaling, y*scaling)
+    
+    def scale_down(self, pos, scaling):
+        x, y = pos
+        return (x/float(scaling), y/float(scaling))     
+
    
-    def find_path(self, pos, to_pos, wire_pieces, bad_points):
+    def find_path(self, pos, to_pos, wire_pieces, bad_points, scaling):
             """A-star/Dijkstra path-finding for multiple targets"""
             from_pos = pos
             visited = set()
             heap = []
             path_matrix, cost_matrix = {}, {}
             
-            max_x, min_x = self.field.nx, 0
-            max_y, min_y = self.field.ny, 0
+            max_x, min_x = self.field.nx*scaling, 0
+            max_y, min_y = self.field.ny*scaling, 0
             
             
             cost_matrix[pos] = 0
             heapq.heappush(heap, (0, pos))
             
+            print "ROUTING - from: ", from_pos , " to: ", to_pos
+
             #if from_pos not in self.graph:
             #    assert False, "find_path() called with target pos not inside graph"
             if from_pos not in self.graph:
                 raise RoutingException("from: " + str(from_pos) + " was not found in graph")
     
+
             # Dijkstra -> try to visit all nodes    (len(graph) > len(visited) and len(heap) > 0)
             cost_fnc = lambda p1, p2: cost_matrix[p1] + 1
             while len(self.graph) > len(visited) and len(heap) > 0:
@@ -87,6 +100,7 @@ class Routing:
                     
             if min_to_pos is None:
                 raise RoutingException("from: " + str(from_pos) + " to: " + str(min_to_pos))
+                #return None, None
             
             # find path to cheapest destination
             to_pos = min_to_pos
@@ -146,7 +160,7 @@ class Routing:
         return out
     
     
-    def calc_routes(self, open_pins, wire_pieces, bad_points):
+    def calc_routes(self, open_pins, wire_pieces, bad_points, scaling):
         """
         Calculate Pseudo-Steiner-Tree for:
         'open_pins' the pins to be connected together
@@ -167,7 +181,7 @@ class Routing:
             # find all paths to targets
             min_cost, min_path, min_from, min_target = None, None, None, None
             for from_pos in remaining:
-                path, dist = self.find_path(from_pos, list(available_targets), wire_pieces, bad_points)
+                path, dist = self.find_path(from_pos, list(available_targets), wire_pieces, bad_points, scaling)
                 
                 if path is None:
                     continue
@@ -182,6 +196,7 @@ class Routing:
                         
             if min_cost is None:
                 raise RoutingException("from: " + str(remaining) + " to: " + str(available_targets))
+                #continue
             
             # found shortest
             m_set = set()
@@ -196,54 +211,62 @@ class Routing:
             
         return conns
 
-    def get_field_nodes(self):
+    def get_field_nodes(self, scaling):
             """Build and return a dict of {pos: FieldNode()} for all visitable nodes"""
             pos_map, net_map = {}, {}
-            for blk_pos, block in self.field.iter_xy_pos_block(split=False, unique=True):
-                #for i, conn in block.conns.items():
-                for pos, pin in block.pins.items():
-                    direction = None
-                    # (transistor) pin position is also scaled a bit
-                    if len(block.pins) == 3: # and conn not in ["gnd", "vdd"]:
-                        rel_pos = pos
-                        
-    
-                    # conn is a input net, save position at field
-                    if pin.net.startswith("in"):
-                        self.field.open_dots += [(direction, pos, pin.net)]
-                        
-                    # conn is a output net, save position at field
-                    if pin.net.startswith("out"):
-                        self.field.output_dots += [pos] 
-                        
+            for _blk_pos, block in self.field.iter_xy_pos_block(split=False, unique=True):
+                print block
+                blk_pos = self.scale_up(_blk_pos, scaling)
+                for _pos, pin in block.pins.items():
+                    
+                    pos = self.scale_up(_pos, scaling)
+                    
+                    if len(block.pins) == 3:
+                        if block.get_pin_direction(pin) == 0:
+                            pos = (pos[0], pos[1]+1)
+                        elif block.get_pin_direction(pin) == 1:
+                            pos = (pos[0]+1, pos[1])
+                        elif block.get_pin_direction(pin) == 2:
+                            pos = (pos[0], pos[1]-1)
+                        else:
+                            pos = (pos[0]-0, pos[1])
+
+
                     if pos not in pos_map:
-                        pos_map[pos] = FieldNode(pin.net, pos)
+                        pos_map[pos] = FieldNode(pin.net, pos )
                     else:
                         pos_map[pos].names.append(pin.net)
                     poses = net_map.setdefault(pin.net, list()) #set()
                     if pos not in poses:
-                        poses.append((pos[0]+blk_pos[0], pos[1]+blk_pos[1]))
+                        poses.append((pos[0]+blk_pos[0],pos[1]+blk_pos[1]))
             
-            #if scaling == 1:
-                hole_mask = ("OOO",
-                             "OOO",
-                             "000")
-            #elif scaling == 2:
-            #    hole_mask = ("00X0"
-            #                 "00X0"
-            #                 "00X0"
-            #                 "00X0")
-            #elif scaling == 4:
-            #    hole_mask = ("00000000",
-            #                 "00000000",
-            #                 "00000000",
-            #                 "00000000",
-            #                 "00000000",
-            #                 "00000000",
-            #                 "00000000",
-            #                 "00000000")
-            #else:
-            #    hole_mask = ()
+            if scaling == 1:
+               hole_mask = ("XX",
+                            "XX")
+            elif scaling == 2:
+                hole_mask = ("00O0"
+                             "0XX0"
+                             "0XX0"
+                             "00O0")
+            elif scaling == 4:
+                #hole_mask = ("00000000",
+                #             "00000000",
+                #             "00OOOOO0",
+                #             "00OOOOO0",
+                #             "00000000",
+                #             "00OOOOO0",
+                #             "00OOOOO0",
+                #             "00000000")
+                hole_mask = ("00000000",
+                             "00000000",
+                             "00XXXXX0",
+                             "00XXXXX0",
+                             "00000000",
+                             "00XXXXX0",
+                             "00XXXXX0",
+                             "00000000")
+            else:
+                hole_mask = ()
             
             holes = []
             for y, _inner in enumerate(hole_mask):
@@ -251,19 +274,19 @@ class Routing:
             
             all_holes = []
             for h_x, h_y in holes:
-                all_holes += [(x+h_x, y+h_y) \
+                all_holes += [(x*scaling+h_x, y*scaling+h_y) \
                   for (x, y), b in self.field.iter_xy_pos_block(split=False, unique=True)]
     
-            for pos in self.field.iter_wire():
+            for pos in self.field.iter_wire(scaling):
                 if pos not in pos_map and pos not in all_holes:
                     pos_map[pos] = FieldNode(None, pos)
             return pos_map, net_map              
 
-    def route(self):
+    def route(self, scaling):
         routing_cost, corner_cost, crossing_cost = 0, 0, 0
         wire_pieces = []
         
-        self.graph, nets = self.get_field_nodes()
+        self.graph, nets = self.get_field_nodes(scaling)
         self.field.wires = []
         self.field.wire_dots = []
         self.net_forbidden_pos = {}
@@ -283,16 +306,16 @@ class Routing:
             # to connect vdd/gnd blocks, which are not placed on top/bottom of the circuit
             connect_poses = poses[:]
             if net in ["vdd", "gnd"]:
-                target_y = 0 if net == "vdd" else self.field.ny
+                target_y = 0 if net == "vdd" else self.field.ny*scaling
                 for x, y in poses:
                     if y != target_y:
                         connect_poses.append((x, target_y))                        
             
             # init "wire-point" -count map with all pins as points (without the "virtual" pins)
             point_dot_map = pdm = dict((pin, 1) for pin in poses)
-                        
+            
             # actually calculate paths
-            final_paths = self.calc_routes(sorted(connect_poses), wire_pieces, self.net_forbidden_pos[net])
+            final_paths = self.calc_routes(sorted(connect_poses), wire_pieces, self.net_forbidden_pos[net], scaling)
             
             # go over all generated paths and add them to field and maintain "wire_pieces"
             for from_to, (paths, (path_cost, path_corner_cost)) in final_paths.items():
@@ -311,11 +334,11 @@ class Routing:
                 for p1, p2 in self.field.iter_pairwise(paths):
                     # convention for wires: pos with smaller x, if equal y decides -> left 
                     _p1, _p2 = (p1, p2) if p1<=p2 else (p2, p1)
-                    self.field.wires.append((_p1, _p2))
+                    self.field.wires.append((self.scale_down(_p1, scaling), self.scale_down(_p2, scaling)))
             
             
             # add wire dots to forbidden points to other nets
-            wire_dots = [p for p, num in pdm.items() if num > 2]
+            wire_dots = [self.scale_down(p, scaling) for p, num in pdm.items() if num > 2]
             self.field.wire_dots += wire_dots
             for t_net in self.net_forbidden_pos:
                 if net != t_net:

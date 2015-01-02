@@ -1,39 +1,41 @@
 
-def start(forceOptimizer):
+def start(forceOptimizer, debug=False):
 
-
-    print ""
-    print "============="
-    print "Initial Phase"
-    print "============="
-    print ""
+    if debug:
+        print ""
+        print "============="
+        print "Initial Phase"
+        print "============="
+        print ""
 
     # the main group is the only group on the highest level, so the queue starts with her
     forceOptimizer.wide_search_queue.append(forceOptimizer.group_main)
 
-    wide_search(forceOptimizer)
+    wide_search(forceOptimizer, debug)
 
-    set_block_relation_to_group(forceOptimizer)
+    set_block_relation_to_group(forceOptimizer, debug)
 
-    calculate_groups_frame(forceOptimizer)
+    calculate_groups_frame(forceOptimizer, debug)
 
-    calculate_groups_position(forceOptimizer)
+    calculate_groups_position(forceOptimizer, debug)
 
 
 
-def wide_search(forceOptimizer):
+def wide_search(forceOptimizer, debug):
     '''
     Description:    Sorts the groups to the gnd / vcc / out list in their distance to out
     '''
-    print "\nWide Search"
-    print "Wide Search Queue count:", len(forceOptimizer.wide_search_queue)
+    if debug:
+        print "\nWide Search"
+        print "Wide Search Queue count:", len(forceOptimizer.wide_search_queue)
     # get the first group of the queue to start a wide search on her over her subgroups
     group = forceOptimizer.wide_search_queue.pop(0)
-    print "Group ID:", group.group_id, " Count Group Childs: ", len(group.childs)
+    if debug:
+        print "Group ID:", group.group_id, " Count Group Childs: ", len(group.childs)
 
     if len(group.childs) == 0:
         if len(forceOptimizer.wide_search_queue) > 0:
-            wide_search(forceOptimizer)
+            wide_search(forceOptimizer, debug)
     else:
         # looking for a start child with connection to the parents east neighbors
         start_child = None
@@ -41,7 +43,8 @@ def wide_search(forceOptimizer):
         queue = []
 
         for child in group.childs:
-            print str(child.group_id) + " Connected to parent's east neighbor:" + str(child.connected_parent_east)
+            if debug: 
+                print str(child.group_id) + " Connected to parent's east neighbor:" + str(child.connected_parent_east)
             if child.connected_parent_east > 0:
                 if start_child is None:
                     start_child = child
@@ -49,7 +52,8 @@ def wide_search(forceOptimizer):
                 else:
                     queue.append(child)
 
-        print "Start Child:", start_child.group_id
+        if debug: 
+            print "Start Child:", start_child.group_id
 
         # classic wide search
         start_child.wide_search_flag = 1
@@ -57,7 +61,8 @@ def wide_search(forceOptimizer):
         while len(queue) > 0:
 
             visited_child = queue.pop(0)
-            print "Visited Child:", visited_child.group_id
+            if debug: 
+                print "Visited Child:", visited_child.group_id
 
             if visited_child not in forceOptimizer.wide_search_queue and visited_child not in group.childs_east_sorted:
                 forceOptimizer.wide_search_queue.append(visited_child)
@@ -74,7 +79,8 @@ def wide_search(forceOptimizer):
 
             for neighbor in visited_child.neighbor_unsorted:
 
-                print "Neighbor:", neighbor.group_id
+                if debug: 
+                    print "Neighbor:", neighbor.group_id
                 # only looking for neighbors in the same group and which are not allready discovered
 
                 if neighbor.parent == visited_child.parent and neighbor.wide_search_flag == 0:
@@ -84,11 +90,11 @@ def wide_search(forceOptimizer):
             visited_child.wide_search_flag = 2
 
         # increment the number of connected to parent north/south/east/west
-        sort_extern_neighbors(group.childs_east_sorted)
+        sort_extern_neighbors(group.childs_east_sorted, debug)
 
         # when all children / subgroups are visited
         # then we can start to sort the neighborhood of these childs in the group
-        sort_unsorted_neighbor(group.childs_east_sorted)
+        sort_unsorted_neighbor(group.childs_east_sorted, debug)
 
         # when the wide search is finish with one group and her subgroups,
         # then starts a wide search on a group in the same level
@@ -97,18 +103,19 @@ def wide_search(forceOptimizer):
         # where groups of a higher level are in the first positions
         # and the groups of a lower level comes in the last part
         if len(forceOptimizer.wide_search_queue) > 0:
-            wide_search(forceOptimizer)
+            wide_search(forceOptimizer, debug)
 
 
 
-def sort_extern_neighbors( east_list):
+def sort_extern_neighbors(east_list, debug):
 
     for group in east_list:
-        print "SORT EXTERN NEIGHBOR for:", str(group.group_id), "Neighbors count:", len(group.neighbor_extern)
-        print "Group PArent Neighbor East count:", len(group.parent.neighbor_east)
-        print "Group PArent Neighbor WEST count:", len(group.parent.neighbor_west)
-        print "Group PArent Neighbor SOUTH count:", len(group.parent.neighbor_south)
-        print "Group PArent Neighbor NORTH count:", len(group.parent.neighbor_north)
+        if debug: 
+            print "SORT EXTERN NEIGHBOR for:", str(group.group_id), "Neighbors count:", len(group.neighbor_extern)
+            print "Group PArent Neighbor East count:", len(group.parent.neighbor_east)
+            print "Group PArent Neighbor WEST count:", len(group.parent.neighbor_west)
+            print "Group PArent Neighbor SOUTH count:", len(group.parent.neighbor_south)
+            print "Group PArent Neighbor NORTH count:", len(group.parent.neighbor_north)
         if len(group.neighbor_extern):
             for neighbor in group.neighbor_extern:
 
@@ -128,13 +135,14 @@ def sort_extern_neighbors( east_list):
                     group.connected_parent_south += 1
                     neighbor.connected_parent_north += 1
 
-        print "Group connected parent east:", group.connected_parent_east
-        print "Group connected parent west:", group.connected_parent_west
-        print "Group connected parent south:", group.connected_parent_south
-        print "Group connected parent north:", group.connected_parent_north
+        if debug: 
+            print "Group connected parent east:", group.connected_parent_east
+            print "Group connected parent west:", group.connected_parent_west
+            print "Group connected parent south:", group.connected_parent_south
+            print "Group connected parent north:", group.connected_parent_north
 
 
-def sort_unsorted_neighbor( east_list):
+def sort_unsorted_neighbor( east_list, debug):
     '''
     '''
     groups = []
@@ -142,19 +150,22 @@ def sort_unsorted_neighbor( east_list):
     for group in east_list:
         groups.append(group.group_id)
 
-    print "Sort Unsorted Neighbor:", groups
+    if debug: 
+        print "Sort Unsorted Neighbor:", groups
 
     #go through all groups in their relative distance to out
     for group in east_list:
-        print "Group in East List:", group.group_id
+        if debug: 
+            print "Group in East List:", group.group_id
 
         #if the group has neighbor which are not sorted to north, south, east, west
         if len(group.neighbor_unsorted) > 0:
 
-            print "Group connected to parent north:", group.connected_parent_north
-            print "Group connected to parent south:", group.connected_parent_south
-            print "Group connected to parent east:", group.connected_parent_east
-            print "Group connected to parent west:", group.connected_parent_west
+            if debug: 
+                print "Group connected to parent north:", group.connected_parent_north
+                print "Group connected to parent south:", group.connected_parent_south
+                print "Group connected to parent east:", group.connected_parent_east
+                print "Group connected to parent west:", group.connected_parent_west
 
             #go through all unsorted neighbor
             for neighbor in group.neighbor_unsorted:
@@ -201,7 +212,8 @@ def sort_unsorted_neighbor( east_list):
                     for block in group.neighbors[neighbor]:
                         group.block_north.add(block)
                 '''
-        print group
+        if debug:
+            print group
 
 def group_compare(x, y):
     '''
@@ -228,88 +240,108 @@ def search_group(group_id,forceOptimizer):
             return group
     return None
 
-def set_block_relation_to_group(forceOptimizer):
-    print ""
-    print "============="
-    print "Block relation to group"
-    print "============="
-    print ""
+def set_block_relation_to_group(forceOptimizer, debug):
+    if debug:
+        print ""
+        print "============="
+        print "Block relation to group"
+        print "============="
+        print ""
 
     for block in forceOptimizer.blocks:
-        print "BLOCK:",block.name
+        if debug: 
+            print "BLOCK:",block.name
+        
         group = search_group(block.groups, forceOptimizer)
-        print "Group:", group.group_id
+
+        if debug: 
+            print "Group:", group.group_id
 
         for key in forceOptimizer.dictionary_net_blocks:
 
             if block in forceOptimizer.dictionary_net_blocks[key]:
-                print "Net:", key
+                if debug: 
+                    print "Net:", key
                 for neighbor in forceOptimizer.dictionary_net_blocks[key]:
-                    print "Block_Neighbor:", neighbor.name
+                    if debug: 
+                        print "Block_Neighbor:", neighbor.name
 
                     if neighbor != block and neighbor.groups != block.groups:
                         group_neighbor = search_group(neighbor.groups, forceOptimizer)
-                        print "Group_Neighbor:", group_neighbor.group_id
+                        if debug: 
+                            print "Group_Neighbor:", group_neighbor.group_id
                         #intern group_neighbors
                         if group_neighbor in group.neighbor_north:
 
                             group.block_north.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
 
                         if group_neighbor in group.neighbor_south:
 
                             group.block_south.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
 
                         if group_neighbor in group.neighbor_east:
 
                             group.block_east.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
 
                         if group_neighbor in group.neighbor_west:
 
                             group.block_west.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
 
                         #extern group_neighbors
                         if group_neighbor.parent in group.parent.neighbor_north:
                             group.block_north.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
 
                         if group_neighbor.parent in group.parent.neighbor_south:
 
                             group.block_south.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
 
                         if group_neighbor.parent in group.parent.neighbor_east:
 
                             group.block_east.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
 
                         if group_neighbor.parent in group.parent.neighbor_west:
 
                             group.block_west.add(block)
-                            print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+                            if debug: 
+                                print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+    if debug:
         print ""
-    for group in forceOptimizer.groups:
-        print group
+        for group in forceOptimizer.groups:
+            print group
 
-def calculate_groups_frame(forceOptimizer):
+def calculate_groups_frame(forceOptimizer, debug):
     '''
     '''
-    print ""
-    print "====================="
-    print "Calculate Group Frame"
-    print "====================="
-    print ""
+    if debug:
+        print ""
+        print "====================="
+        print "Calculate Group Frame"
+        print "====================="
+        print ""
 
-    for group in forceOptimizer.groups:
-        print "Group:", group.group_id
+    if debug: 
+        for group in forceOptimizer.groups:
+            print "Group:", group.group_id
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
 
-    for group in forceOptimizer.groups:
-        print "SortedGroup:", group.group_id
+    if debug: 
+        for group in forceOptimizer.groups:
+            print "SortedGroup:", group.group_id
 
     groups = forceOptimizer.groups[:]
     groups.append(forceOptimizer.group_main)
@@ -338,7 +370,9 @@ def calculate_groups_frame(forceOptimizer):
             for child in group.child_south:
                 width_south += child.size_width
 
-        print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
+        if debug: 
+            print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
+
         #the bigger width of north and south is the width for the group
         group.size_width = max({width_north, width_south})
         group.size_height = max({height_east, height_west})
@@ -352,7 +386,8 @@ def calculate_groups_frame(forceOptimizer):
             group.size_width = group.size_width + 1
             group.size_height = group.size_height + 1
 
-        print group
+        if debug: 
+            print group
 
     if forceOptimizer.group_connected_to_parent_neighbor_set_parent_size:
         forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
@@ -368,27 +403,30 @@ def calculate_groups_frame(forceOptimizer):
 
 
 
-def calculate_groups_position(forceOptimizer):
+def calculate_groups_position(forceOptimizer, debug):
     '''
     Only the position of the groups will be calculated
     starting with the high level group and set the positions of the childs
     position is relative to parent left upper corner
     '''
-    print ""
-    print "========================"
-    print "Calculate Group Position"
-    print "========================"
-    print ""
+    if debug:
+        print ""
+        print "========================"
+        print "Calculate Group Position"
+        print "========================"
+        print ""
 
     for group in forceOptimizer.groups:
-        print "Group:", group.group_id
+        if debug: 
+            print "Group:", group.group_id
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
 
     for group in forceOptimizer.groups:
         group.position_x = -1
         group.position_y = -1
-        print "SortedGroup:", group.group_id
+        if debug: 
+            print "SortedGroup:", group.group_id
 
     groups = forceOptimizer.groups[:]
     groups.insert(0, forceOptimizer.group_main)
@@ -414,7 +452,8 @@ def calculate_groups_position(forceOptimizer):
             pins = ""
             for p in block.pins.values():
                 pins += " " + p.net
-            print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "Pins:", pins
+            if debug: 
+                print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "Pins:", pins
 
         for child in group.childs:
             # children connected to NORTH and SOUTH have position y = 0 and are tall as the group
@@ -504,8 +543,9 @@ def calculate_groups_position(forceOptimizer):
             if child not in group.child_south and child not in group.child_north:
                 child.position_y = calculate_border_east_west_position(child, group.child_west)
 
-    for group in groups:
-        print group
+    if debug:
+        for group in groups:
+            print group
 
 def calculate_border_north_south_position(group,neighbors):
     right = group.parent.size_width

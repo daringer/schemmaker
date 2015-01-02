@@ -8,15 +8,31 @@ from block import *
 from force_optimizer import *
 from field import *
 from parsers.vhdl import parse_vhdl as parse
+from schematic import draw_field
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.test_data_dir = "../../testdata/"
+        #self.fn = "circuit_op8.vhdl"
+        self.fn = "circuit_bi1_0op337_1.vhdl"        
+        #self.fn = "circuit_bi1_0op324_0.vhdl"
+        #self.fn = "circuit_bi1_0op324_2.vhdl"
+        
+        self.files = os.listdir(self.test_data_dir)
+        path = os.path.join(self.test_data_dir, self.fn)
+        
+        output = parse(path)
 
-    def test_simple(self):
+        self.blocks = []
+        for i, b_data in enumerate(output):
+            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
+            self.blocks.append(b)
+
+        self.field = Field("test_circ", 40, 40)
+        self.pins = (['vdd'], ['gnd', 'vss'], ['out'], ['out2'])
+        
         self.raw_data = [
-
             {'conns': ['net2', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
             {'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
             {'conns': ['vdd', 'vbias1', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0, 0], 'pos': (4,0), 'rot': 0, 'mir': True},
@@ -33,69 +49,78 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         ]
 
         self.raw_data_easy = [
-
             {'conns': ['gnd', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0], 'pos': (4,4), 'rot': 2, 'mir': False},
             {'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0], 'pos': (6,4), 'rot': 2, 'mir': True},
             {'conns': ['vdd', 'in2', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0], 'pos': (4,0), 'rot': 0, 'mir': True},
         ]
-        self.blocks = []
-        self.field = Field("test_circ", 40, 40)
-
-        for i, b_data in enumerate(self.raw_data):
-            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
-
-            b.rotate(b_data["rot"])
-            b.mirror(set_to=b_data["mir"])
-
-            self.blocks.append(b)
 
 
-        self.assertEqual(self.field.nx, 40)
-        self.assertEqual(self.field.ny, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out'], [])
+    def construct_force_algo_obj(self, field, blocks, pins):
+        return ForceAlgorithm(field, blocks, *pins)
 
-        for block in self.force_algo.blocks:
-            self.field.add_block(block, block.pos)
+    #def xTODO_test_simple(self):
+    #    
+    #    self.blocks = []
+    #    self.field = Field("test_circ", 40, 40)
+    
+    #    for i, b_data in enumerate(self.raw_data):
+    #        b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
+    #        b.rotate(b_data["rot"])
+    #        b.mirror(set_to=b_data["mir"])
+    #        self.blocks.append(b)
 
-    def test_force_algo(self):
-        print "test_create_groups"
+
+    #    self.assertEqual(self.field.nx, 40)
+    #    self.assertEqual(self.field.ny, 40)
+    #    self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out'], [])
+
+    #    for block in self.force_algo.blocks:
+    #        self.field.add_block(block, block.pos)
+
+    def test_create_groups(self):
+        f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
+        f.run()
 
         # Check if the main group containts only the two subgroups 0 and 1
-        self.assertEqual(len(self.force_algo.group_main.childs), 2)
+        self.assertEqual(len(f.group_main.childs), 2)
 
-        print "test_check_neighbor"
+    def test_check_neighbors(self):
+        f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
+        f.run()
 
         # Check that both subgroups of the main group are neighbor
-        self.assertTrue(self.force_algo.group_main.childs[0].are_neighbor(self.force_algo.group_main.childs[1]))
+        self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
 
+    def test_full(self):
+        f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
 
+        #debug = True
+        debug = False
 
-    def test_import(self):
-        print "test_import"
-        self.test_data_dir = "../../testdata/"
-        self.fn = "circuit_op8.vhdl"
-        #self.fn = "circuit_bi1_0op324_0.vhdl"
-        #self.fn = "circuit_bi1_0op324_2.vhdl"
-        #self.fn = "circuit_bi1_0op330_1.vhdl"
-        #self.files = os.listdir(self.test_data_dir)
-        path = os.path.join(self.test_data_dir, self.fn)
-        output = parse(path)
+        f.step_build(debug)
+        f1 = f.get_debug_field()
+        fn = draw_field(f1, "schematic_build.pdf")
 
-        self.blocks = []
+        f.step_initial(debug)
+        f2 = f.get_debug_field()
+        fn = draw_field(f2, "schematic_init.pdf")
 
-        for i, b_data in enumerate(output):
-            b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
-            #b.rotate(b_data["rot"])
-            #b.mirror(set_to=b_data["mir"])
+        f.step_main(debug)
+        f3 = f.get_debug_field()
+        fn = draw_field(f3, "schematic_main.pdf")
 
-            self.blocks.append(b)
-
-        print self.fn
-        print path
-
-        self.field = Field("test_circ", 40, 40)
-        self.force_algo = ForceAlgorithm(self.field, self.blocks, ['vdd'], ['gnd', 'vss'], ['out1'], ['out2'])
+        f.step_last(debug)
+        f4 = f.get_debug_field()
+        fn = draw_field(f4, "schematic_final.pdf")
+        
+        # CHECK IF OVERLAPPING BLOCKS WERE FOUND
+        overlap = f4.has_overlapping_blocks()
+        if overlap:
+            #f4.show_blocks(sortkey="pos")
+            #f4.show_blocks(sortkey="name")
+            f4.show_blocks(sortkey=("groups", "pos"))
+        self.assertFalse(overlap, "Found overlapping blocks!")
 
 
 if __name__ == '__main__':

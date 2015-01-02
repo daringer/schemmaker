@@ -19,10 +19,6 @@ class VHDLParserTestSuite(unittest.TestCase):
             path = os.path.join(self.test_data_dir, fn)
             output = parse(path)
 
-            print output
-            print fn
-            print path
-            
             self.assertTrue( len(output) > 0 )
             for blk in output:
                 self.assertTrue( "conns" in blk )
@@ -36,6 +32,15 @@ class VHDLParserTestSuite(unittest.TestCase):
                                  blk["type"] is not None )
                 self.assertTrue( len(blk["name"]) > 0 and
                                  blk["type"] != blk["name"] )
+
+    def test_net_parse_fail(self):
+        path = os.path.join(self.test_data_dir, "circuit_op9.vhdl")
+        out = parse(path)
+        for blk in out:
+            for c in blk["conns"]:
+                self.assertTrue(c.startswith("net") or c.startswith("in") or
+                        c.startswith("out") or c in ["gnd", "vdd", "vref"] or
+                        c.startswith("vbias"), blk["conns"])
 
 if __name__ == '__main__':
     unittest.main()

@@ -16,18 +16,30 @@ class Regression(unittest.TestCase):
     """High-lvl tests, involving as much as possible"""
     def setUp(self):
         self.raw_data = [
-            {'conns': ['net2', 'inp1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
-            {'conns': ['outp', 'inp2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
-            {'conns': ['vdd', 'vbias1', 'net1'],      'type': 'pmos',       'name': 'm3',  'groups': [0, 0], 'pos': (4,0), 'rot': 0, 'mir': True},
-            {'conns': ['net2', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm4',  'groups': [0, 1], 'pos': (4,8), 'rot': 0, 'mir': False},
-            {'conns': ['outp', 'net2', 'gnd'],        'type': 'nmos',       'name': 'm5',  'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
-            {'conns': ['vbias1', 'vbias1', 'vdd'],    'type': 'pmos',       'name': 'm6',  'groups': [1, 0], 'pos': (2,0), 'rot': 2, 'mir': False},
-            {'conns': ['vbias2', 'vbias2', 'vbias1'], 'type': 'pmos',       'name': 'm7',  'groups': [1, 0], 'pos': (2,2), 'rot': 2, 'mir': False},
-            {'conns': ['vdd', 'vbias3'],              'type': 'idc',        'name': 'i2',  'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
-            {'conns': ['vbias3', 'vbias3', 'vbias4'], 'type': 'nmos',       'name': 'm8',  'groups': [1, 0], 'pos': (0,6), 'rot': 0, 'mir': True},
-            {'conns': ['vbias2', 'vbias3', 'net3'],   'type': 'nmos',       'name': 'm9',  'groups': [1, 0], 'pos': (2,6), 'rot': 0, 'mir': False},
-            {'conns': ['vbias4', 'vbias4', 'gnd'],    'type': 'nmos',       'name': 'm10', 'groups': [1, 0], 'pos': (0,8), 'rot': 0, 'mir': False},
-            {'conns': ['net3', 'vbias4', 'gnd'],      'type': 'nmos',       'name': 'm11', 'groups': [1, 0], 'pos': (2,8), 'rot': 0, 'mir': True},
+            {'conns': ['net2', 'inp1', 'net1'], 'type': 'pmos', 'name': 'm1',  
+                'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
+            {'conns': ['outp', 'inp2', 'net1'], 'type': 'pmos', 'name': 'm2',
+                'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
+            {'conns': ['vdd', 'vbias1', 'net1'], 'type': 'pmos', 'name': 'm3',
+                'groups': [0, 0], 'pos': (4,0), 'rot': 0, 'mir': True},
+            {'conns': ['net2', 'net2', 'gnd'], 'type': 'nmos', 'name': 'm4',
+                'groups': [0, 1], 'pos': (4,8), 'rot': 0, 'mir': False},
+            {'conns': ['outp', 'net2', 'gnd'], 'type': 'nmos', 'name': 'm5',
+                'groups': [0, 1], 'pos': (6,8), 'rot': 0, 'mir': True},
+            {'conns': ['vbias1', 'vbias1', 'vdd'], 'type': 'pmos', 'name': 'm6',
+                'groups': [1, 0], 'pos': (2,0), 'rot': 2, 'mir': False},
+            {'conns': ['vbias2', 'vbias2', 'vbias1'], 'type': 'pmos', 'name': 'm7',
+                'groups': [1, 0], 'pos': (2,2), 'rot': 2, 'mir': False},
+            {'conns': ['vdd', 'vbias3'], 'type': 'idc', 'name': 'i2',
+                'groups': [1, 0], 'pos': (0,0), 'rot': 0, 'mir': False},
+            {'conns': ['vbias3', 'vbias3', 'vbias4'], 'type': 'nmos', 'name': 'm8', 
+                'groups': [1, 0], 'pos': (0,6), 'rot': 0, 'mir': False},
+            {'conns': ['vbias2', 'vbias3', 'net3'], 'type': 'nmos', 'name': 'm9',
+                'groups': [1, 0], 'pos': (2,6), 'rot': 0, 'mir': True},
+            {'conns': ['vbias4', 'vbias4', 'gnd'], 'type': 'nmos', 'name': 'm10', 
+                'groups': [1, 0], 'pos': (0,8), 'rot': 0, 'mir': False},
+            {'conns': ['net3', 'vbias4', 'gnd'], 'type': 'nmos', 'name': 'm11', 
+                'groups': [1, 0], 'pos': (2,8), 'rot': 0, 'mir': True},
         ]
 
         self.field = None
@@ -123,8 +135,6 @@ class Regression(unittest.TestCase):
         self.assertEqual(len(f1.xy2block), len(f2.xy2block))
         self.assertEqual(len(f1.yx2block), len(f2.yx2block))
 
-
-
     def test_field_finalization(self):
         self.test_add_blocks()
         self.field.optimize_size()
@@ -132,11 +142,22 @@ class Regression(unittest.TestCase):
         # no error is good at this point
         self.assertTrue(True)
 
+    def test_expansion(self):
+        self.test_field_finalization()
+
+        nx, ny = self.field.nx, self.field.ny 
+        self.field.expand_field(4)
+
+        fn = draw_field(self.field, self.get_tempfile(4))
+        
+        self.assertTrue(nx < self.field.nx)
+        self.assertTrue(ny < self.field.ny)
+
     def test_routing(self):
         self.test_field_finalization()
 
         r = Routing(self.field)
-        ret = r.route()
+        ret = r.route(4)
 
         self.assertGreaterEqual(ret[0], 1)
 
@@ -162,7 +183,7 @@ class Regression(unittest.TestCase):
     def test_draw_with_grid(self):
         self.test_field_finalization()
 
-        fn = draw_field(self.field, self.get_tempfile(3), grid=(10, 10, 0, 0, 2))
+        fn = draw_field(self.field, self.get_tempfile(3), grid=(10, 10, 0, 0, 1))
 
         self.assertTrue( os.path.isfile(fn) )
         self.assertTrue( os.path.exists(fn) )

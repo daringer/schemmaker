@@ -1,14 +1,14 @@
 import math
 
-def start (forceOptimizer):
+def start (forceOptimizer, debug=False):
+    if debug:
+        print ""
+        print "============="
+        print "Main Phase"
+        print "============="
+        print ""
 
-    print ""
-    print "============="
-    print "Main Phase"
-    print "============="
-    print ""
-
-    calculate_zft_position(forceOptimizer)
+    calculate_zft_position(forceOptimizer, debug)
 
 
 def search_group(group_id, forceOptimizer):
@@ -39,12 +39,12 @@ def search_neighbors(block, forceOptimizer):
         pass #print "Neighbor Block:", neighbor.name, "Group:", str(neighbor.groups)
     return neighbors
 
-def calculate_zft_position(forceOptimizer):
+def calculate_zft_position(forceOptimizer, debug):
     turn = 0
     while (turn != 18):
-        print "TURN:", turn
-
-
+    
+        if debug:
+            print "TURN:", turn
 
         if turn % 3 == 0:
             # free block turn
@@ -53,27 +53,37 @@ def calculate_zft_position(forceOptimizer):
                 neighbors = search_neighbors(block, forceOptimizer)
                 if block not in group.block_north and block not in group.block_south:
                     if block not in group.block_east and block not in group.block_west:
-                        print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        if debug:
+                            print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        
                         block.pos = sum_calculate_free(block, neighbors, group)
-                        print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        
+                        if debug:
+                            print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
         elif turn % 3 == 1:
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
                 neighbors = search_neighbors(block, forceOptimizer)
                 if (block in group.block_north or block in group.block_south) and (block not in group.block_east and block not in group.block_west):
-                        print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        if debug:
+                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
                         block.pos = sum_calculate_north_south(block, neighbors, group)
-                        print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        if debug:
+                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
                 if (block in group.block_east or block in group.block_west) and (block not in group.block_north and block not in group.block_south):
-                        print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        if debug:
+                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
                         block.pos = sum_calculate_east_west(block, neighbors, group)
-                        print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        if debug:
+                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
         elif turn % 3 == 2:
-            print "---------"
-            print "TURN: Border Blocks"
-            print "---------"
+            if debug:
+                print "---------"
+                print "TURN: Border Blocks"
+                print "---------"
+
             for group in forceOptimizer.groups:
 
                 number_of_east_north = len(group.block_north & group.block_east)
@@ -96,26 +106,33 @@ def calculate_zft_position(forceOptimizer):
                 if number_of_east_north > 1:
                     position = group.size_width - 1
                     for block in blocks_NE:
-                        print "Group:", group.group_id, " Block_NE"
-                        print block, block.pos
+                        if debug:
+                            print "Group:", group.group_id, " Block_NE"
+                            print block, block.pos
                         block.pos[0] = position
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
                         position -= 1
 
                 if number_of_west_north > 1:
                     position = 0
                     for block in blocks_NW:
-                        print "Group:", group.group_id, " Block_NW"
-                        print block, block.pos
+                        if debug:
+                            print "Group:", group.group_id, " Block_NW"
+                            print block, block.pos
                         block.pos[0] = position
-                        print block, block.pos
+    
+                        if debug:
+                            print block, block.pos
                         position += 1
 
                 for block in blocks_N:
-                    print "Group:", group.group_id, " Block_North"
-                    print block, block.pos
+                    if debug:
+                        print "Group:", group.group_id, " Block_North"
+                        print block, block.pos
                     block.pos[0] = calculate_border_north_south_position(block, group.block_north)
-                    print block, block.pos
+                    if debug:
+                        print block, block.pos
 
                 #SOUTH
                 blocks_SE = set()
@@ -132,43 +149,55 @@ def calculate_zft_position(forceOptimizer):
                 if number_of_east_south > 1:
                     position = group.size_width - 1
                     for block in blocks_SE:
-                        print "Group:", group.group_id, " Block_SE"
-                        print block, block.pos
+                        if debug:
+                            print "Group:", group.group_id, " Block_SE"
+                            print block, block.pos
                         block.pos[0] = position
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
                         position -= 1
 
                 if number_of_west_south > 1:
                     position = 0
                     for block in blocks_SW:
-                        print "Group:", group.group_id, " Block_SW"
-                        print block, block.pos
+                        if debug:
+                            print "Group:", group.group_id, " Block_SW"
+                            print block, block.pos
                         block.pos[0] = position
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
                         position += 1
 
                 for block in blocks_S:
-                    print "Group:", group.group_id, " Block_South"
-                    print block, block.pos
+                    if debug:
+                        print "Group:", group.group_id, " Block_South"
+                        print block, block.pos
                     block.pos[0] = calculate_border_north_south_position(block, group.block_south)
-                    print block, block.pos
+                    if debug:
+                        print block, block.pos
 
                 #EAST
                 for block in group.block_east:
-                    print "Group:", group.group_id, " Block_East"
+                    if debug:
+                        print "Group:", group.group_id, " Block_East"
                     if block not in group.block_north and block not in group.block_south:
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
                         block.pos[1] = calculate_border_east_west_position(block, group.block_east)
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
 
 
                 #WEST
                 for block in group.block_west:
-                    print "Group:", group.group_id, " Block_West"
+                    if debug:
+                        print "Group:", group.group_id, " Block_West"
                     if block not in group.block_north and block not in group.block_south:
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
                         block.pos[1] = calculate_border_east_west_position(block, group.block_west)
-                        print block, block.pos
+                        if debug:
+                            print block, block.pos
 
             '''
             for block in forceOptimizer.blocks:
@@ -236,12 +265,10 @@ def calculate_border_north_south_position(block,neighbors):
             left = left + 1
     return left
 
-def sum_calculate_north_south_group(group):
+def sum_calculate_north_south_group(group, debug):
     '''
     weight =
     '''
-
-
 
     count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
     group_x = count_neighbors * group.position_x
@@ -255,7 +282,8 @@ def sum_calculate_north_south_group(group):
         div = count_neighbors
 
         for neighbor in group.neighbors:
-            print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+            if debug:
+                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
             div += len(group.neighbors[neighbor])
 
         group_x /= div
@@ -271,12 +299,10 @@ def sum_calculate_north_south_group(group):
 
     group.position_x = group_x
 
-def sum_calculate_east_west_group(group):
+def sum_calculate_east_west_group(group, debug):
     '''
     weight =
     '''
-
-
 
     count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
     group_y = count_neighbors * group.position_y
@@ -290,7 +316,8 @@ def sum_calculate_east_west_group(group):
         div = count_neighbors
 
         for neighbor in group.neighbors:
-            print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+            if debug:
+                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
             div += len(group.neighbors[neighbor])
 
         group_y /= div
@@ -306,7 +333,7 @@ def sum_calculate_east_west_group(group):
 
     group.position_y = group_y
 
-def sum_calculate_free_group(group):
+def sum_calculate_free_group(group, debug):
     '''
     weight  = 1 between free blocks
             = 3 between border blocks
@@ -326,7 +353,8 @@ def sum_calculate_free_group(group):
         div = count_neighbors
 
         for neighbor in group.neighbors:
-            print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+            if debug:
+                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
             div += len(group.neighbors[neighbor])
 
         group_x /= div
@@ -474,11 +502,12 @@ def sum_calculate_east_west(block, neighbors, group):
     return [block.pos[0], y]
 
 
-def calculate_pin_position(block, neighbor, pin):
+def calculate_pin_position(block, neighbor, pin, debug):
     pos = []
     for pin1 in block.pins.values():
         for pin2 in neighbor.pins.values():
-            #print "block.pins[pin].net:",block.pins[pin].net, "pin2.net:",pin2.net
+            if debug:
+                print "block.pins[pin].net:",block.pins[pin].net, "pin2.net:",pin2.net
             if pin1.net == pin2.net:# == block.pins[pin].net:
                 pos.append(pin2.pos[0])
                 pos.append(pin2.pos[1])
