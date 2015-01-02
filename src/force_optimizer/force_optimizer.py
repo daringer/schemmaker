@@ -10,8 +10,6 @@ from field import Field, DebugField, FieldException
 from operator import itemgetter, attrgetter
 from group import Group
 from block import Block
-#from PyQt4 import QtGui
-#from PyQt4 import QtCore
 
 import sys
 import build_step
@@ -26,17 +24,12 @@ VCC_GRP = -3
 GND_GRP = -2
 
 class ForceAlgorithm(BaseOptimizer):
-    '''
-    '''
     def __init__(self, field, blocks, north_pins, south_pins, east_pins, west_pins):
-        '''
-        '''
 
         BaseOptimizer.__init__(self, field)
 
         # flags
         self.group_connected_to_parent_neighbor_set_parent_size = True
-
 
         self.groups = []
         self.blocks = blocks
@@ -117,8 +110,8 @@ class ForceAlgorithm(BaseOptimizer):
             for g in self.groups:
                 if next_grp == g.parent.group_id[0]:
                     grp2pos[g] = (
-                        g.position_x * g.size_width + g.parent.position_x * 2,
-                        g.position_y * g.size_height + g.parent.position_y * 2
+                        g.position_x * g.size_width + g.parent.position_x * blksize,
+                        g.position_y * g.size_height + g.parent.position_y * blksize
                     )
                     next_stack.extend(grp.group_id[0] for grp in g.childs)
             
@@ -137,117 +130,6 @@ class ForceAlgorithm(BaseOptimizer):
         print "## initial_step took {:.3f} sec.".format(self.interval_initial_step)
         print "## main_step took {:.3f} sec.".format(self.interval_main_step)
         print "## last_step took {:.3f} sec.".format(self.interval_last_step)
-
-        
-
-#class Example(QtGui.QMainWindow):
-#
-#    def __init__(self, frame, group_id, forceOptimizer):
-#        '''
-#        '''
-#        super(Example, self).__init__()
-#        self.labels = []
-#        self.x = frame[0]
-#        self.y = frame[1]
-#        self.width = frame[2]
-#        self.height = frame[3]
-#        self.title = group_id
-#        self.forceOptimizer = forceOptimizer
-#        self.block_size = 30
-#        self.initUI()
-#
-#    def initUI(self):
-#        '''
-#        '''
-#        self.setGeometry(self.x * self.block_size, self.y * self.block_size, self.width * self.block_size, self.height * self.block_size)
-#        self.setWindowTitle(self.title)
-#
-#        for group in self.forceOptimizer.groups:
-#
-#            pos_x = group.position_x * self.block_size + group.parent.position_x
-#            pos_y = group.position_y * self.block_size + group.parent.position_y
-#            group.position_x = pos_x
-#            group.position_y = pos_y
-#
-#
-#
-#        self.show()
-#
-#    def paintEvent(self, e):
-#        '''
-#        '''
-#        qp = QtGui.QPainter()
-#        qp.begin(self)
-#        self.drawRectangles(qp)
-#        qp.end()
-#
-#
-#
-#    def drawRectangles(self, qp):
-#        '''
-#        '''
-#
-#        qp.setPen(QtGui.QColor(0, 0, 0))
-#        qp.setBrush(QtGui.QColor(255, 255, 255))
-#
-#        for group in self.forceOptimizer.groups:
-#            qp.drawRect(group.position_x, group.position_y, group.size_width * self.block_size, group.size_height * self.block_size)
-#
-#        qp.setPen(QtGui.QColor(0, 0, 0))
-#        qp.setBrush(QtGui.QColor(255, 255, 255))
-#
-#        for group in self.forceOptimizer.groups:
-#            for block in group.blocks:
-#    
-#                print "POOOOS:" , block.pos
-#                qp.drawRect(block.pos[0] * self.block_size + group.position_x, block.pos[1] * self.block_size + group.position_y, 1 * self.block_size, 1 * self.block_size)
-#                label = QtGui.QLabel(block.name, self)
-#
-#                label.setGeometry(block.pos[0] * self.block_size + group.position_x+5, block.pos[1] * self.block_size + group.position_y, self.block_size, self.block_size)
-#                label.show()
-#        '''
-#        for group in self.forceOptimizer.groups:
-#            print ""
-#            print "Group:", group.group_id, " POS_X:", group.position_x, " POS_Y:", group.position_y
-#
-#            for block in group.blocks:
-#                b_x = block.pos[0] * 50 + group.position_x + 25
-#                b_y = block.pos[1] * 50 + group.position_y + 25
-#                print ""
-#                print "Block:", block.name, " POS_X:", b_x, " POS_Y:", b_y, "Pins:", block.pins.values()
-#                neighbors = search_neighbors(block, self.forceOptimizer)
-#
-#                for neighbor in neighbors:
-#
-#                    neighbor_group = search_group(neighbor.groups, self.forceOptimizer)
-#
-#
-#                    n_x = neighbor.pos[0] * 50 + neighbor_group.position_x + 25
-#                    n_y = neighbor.pos[1] * 50 + neighbor_group.position_x + 25
-#
-#                    qp.drawLine(b_x, b_y, n_x, n_y)
-#                    print "Neighbor:",neighbor.name , " POS_X:", n_x, " POS_Y:", n_y
-#                    print "NeighborGroup:", neighbor_group.group_id, " POS_X:", neighbor_group.position_x, " POS_Y:", neighbor_group.position_y
-#        '''
-#def search_neighbors(block, forceOptimizer):
-#    neighbors = {}
-#    for pin in block.pins.values():
-#        #print pin.net
-#        if pin.net in forceOptimizer.dictionary_net_blocks:
-#            for block_neighbor in forceOptimizer.dictionary_net_blocks[pin.net]:
-#                if block is not block_neighbor:
-#                    if block_neighbor not in neighbors:
-#                        neighbors[block_neighbor] = 1
-#                    else:
-#                        value = neighbors[block_neighbor]
-#                        value += 1
-#                        neighbors[block_neighbor] = value
-#    for neighbor in neighbors:
-#        pass #print "Neighbor Block:", neighbor.name, "Group:", str(neighbor.groups)
-#    return neighbors
-
-
-
 
 
 def search_group(group_id, forceOptimizer):
