@@ -92,27 +92,35 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
 
-    def test_import(self):
+    def test_full(self):
         f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
 
-        f.step_build()
+        #debug = True
+        debug = False
+
+        f.step_build(debug)
         f1 = f.get_debug_field()
         fn = draw_field(f1, "schematic_build.pdf")
 
-        f.step_initial()
+        f.step_initial(debug)
         f2 = f.get_debug_field()
         fn = draw_field(f2, "schematic_init.pdf")
 
-        f.step_main()
+        f.step_main(debug)
         f3 = f.get_debug_field()
         fn = draw_field(f3, "schematic_main.pdf")
 
-        f.step_last()
+        f.step_last(debug)
         f4 = f.get_debug_field()
         fn = draw_field(f4, "schematic_final.pdf")
         
-        f4.show_blocks(sortkey="name")
-        #f.debug_times()
+        # CHECK IF OVERLAPPING BLOCKS WERE FOUND
+        overlap = f4.has_overlapping_blocks()
+        if overlap:
+            #f4.show_blocks(sortkey="pos")
+            #f4.show_blocks(sortkey="name")
+            f4.show_blocks(sortkey="groups")
+        self.assertFalse(overlap, "Found overlapping blocks!")
 
 
 if __name__ == '__main__':

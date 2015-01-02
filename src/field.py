@@ -126,8 +126,21 @@ class DebugField(object):
 
         for blk, (x, y) in objs:
             print (tmpl*5).format(
-                    blk.name, blk.type, blk.groups, blk.pos, blk.pins, pad=pad)
-        
+                    blk.name, blk.type, blk.groups, blk.pos, blk.pins.values(), pad=pad)
+
+    def has_overlapping_blocks(self):
+        # haha just brute-force this ! ;(
+        f = Field("test_circuit_id", self.nx, self.ny)
+        try:
+            for blk, (x, y) in self.block2xy.items():
+                f.add_block(blk, (x, y))
+        except FieldSpaceOccupied as e:
+            # exception thrown -> overlapping blocks!
+            print e
+            return True
+
+        # no exception - no overlaps!
+        return False
 
 class Field(object):
     def __init__(self, cid, nx, ny):
