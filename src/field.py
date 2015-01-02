@@ -116,13 +116,21 @@ class DebugField(object):
             out.add_block(blk.copy(), x, y)
 
     def show_blocks(self, sortkey=None):
+        """
+        sortkey: key(s) to use for sorting
+                 -> tuple, list : sort fields in given order 
+                 -> string : sort only based on this field
+        """
         pad = 9
         tmpl = "{:<{pad}}"
         print (tmpl*5).format("name", "type", "grps", "pos", "nets", pad=pad)
         objs = self.block2xy.items()
 
         if sortkey is not None:
-            objs.sort(key=lambda o: getattr(o[0], sortkey))
+            if not isinstance(sortkey, (tuple, list)):
+                sortkey = [sortkey]
+
+            objs.sort( key=lambda o: tuple(getattr(o[0], skey) for skey in sortkey) )
 
         for blk, (x, y) in objs:
             print (tmpl*5).format(

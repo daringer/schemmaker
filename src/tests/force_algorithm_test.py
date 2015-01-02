@@ -119,7 +119,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         if overlap:
             #f4.show_blocks(sortkey="pos")
             #f4.show_blocks(sortkey="name")
-            f4.show_blocks(sortkey="groups")
+            f4.show_blocks(sortkey=("groups", "pos"))
         self.assertFalse(overlap, "Found overlapping blocks!")
 
 
