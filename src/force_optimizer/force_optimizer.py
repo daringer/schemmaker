@@ -6,7 +6,7 @@ Created on 23.03.2014
 
 
 from base_optimizer import BaseOptimizer
-from field import Field, FieldException
+from field import Field, DebugField, FieldException
 from operator import itemgetter, attrgetter
 from group import Group
 from block import Block
@@ -31,8 +31,6 @@ class ForceAlgorithm(BaseOptimizer):
     def __init__(self, field, blocks, north_pins, south_pins, east_pins, west_pins):
         '''
         '''
-
-        print "init Force Algorithm"
 
         BaseOptimizer.__init__(self, field)
 
@@ -76,45 +74,66 @@ class ForceAlgorithm(BaseOptimizer):
         self.group_main.neighbor_south.append(self.group_south)
         self.group_south.neighbor_north.append(self.group_main)
 
+    def _timeit(self, func, *v, **kw):
+        s = time.time()
+        func(*v, **kw)
+        e = time.time()
+        return e - s
 
-        start = time.time()
-        build_step.start(self)
-        end = time.time()
-        interval_build_step = end - start
+    def run(self, debug=False):
+        self.step_build(debug)
+        self.step_initial(debug)
+        self.step_main(debug)
+        self.step_last(debug)
 
+    def step_build(self, debug=False):
+        self.interval_build_step = \
+            self._timeit(build_step.start, self, debug)
 
-        start = time.time()
-        initial_step.start(self)
-        end = time.time()
-        interval_initial_step = end - start
+    def step_initial(self, debug=False):
+        self.interval_initial_step = \
+            self._timeit(initial_step.start, self, debug)
 
-        #app1 = QtGui.QApplication(sys.argv)
-        #ex1 = Example([self.group_main.position_x, self.group_main.position_y, self.group_main.size_width, self.group_main.size_height], "Main Step", self)
-        #app1.exec_()
-        
+    def step_main(self, debug=False):
+        self.interval_main_step = \
+            self._timeit(main_step.start, self, debug)
 
-        start = time.time()
-        main_step.start(self)
-        end = time.time()
-        interval_main_step = end - start
+    def step_last(self, debug=False):
+        self.interval_last_step = \
+            self._timeit(last_step.start, self, debug)
 
-        start = time.time()
-        last_step.start(self)
-        end = time.time()
-        interval_last_step = end - start
+    def get_debug_field(self):
+        # calc grp positions // kinda ugly ;D
+        # feels like I need to do a breadth-first search to correctly 
+        # inherit from top-lvl-grp downwards!
+        grp2pos = {}
+        next_grp = None
+        next_stack = [-4]
+        while len(grp2pos) < len(self.groups):
+            next_grp = next_stack.pop(0)
+            for g in self.groups:
+                if next_grp == g.parent.group_id[0]:
+                    grp2pos[g] = (
+                        g.position_x * g.size_width + g.parent.position_x,
+                        g.position_y * g.size_height + g.parent.position_y 
+                    )
+                    next_stack.extend(grp.group_id[0] for grp in g.childs)
+            
+        # actually calc block positions
+        out = DebugField(self.field.nx, self.field.ny)
+        for g in self.groups:
+            grp_x, grp_y = grp2pos[g]
+            for b in g.blocks:
+                x = b.pos[0] * b.size[0] + grp_x
+                y = b.pos[1] * b.size[1] + grp_y
+                out.add_block(b.copy(out), x, y)
+        return out
 
-        print "============================================"
-        print('build_step took %.03f sec.' % interval_build_step)
-        print "============================================"
-        print "============================================"
-        print('initial_step took %.03f sec.' % interval_initial_step)
-        print "============================================"
-        print "============================================"
-        print('main_step took %.03f sec.' % interval_main_step)
-        print "============================================"
-        print "============================================"
-        print('last_step took %.03f sec.' % interval_last_step)
-        print "============================================"
+    def debug_times(self):
+        print "## build_step took {:.3f} sec.".format(self.interval_build_step)
+        print "## initial_step took {:.3f} sec.".format(self.interval_initial_step)
+        print "## main_step took {:.3f} sec.".format(self.interval_main_step)
+        print "## last_step took {:.3f} sec.".format(self.interval_last_step)
 
         
 

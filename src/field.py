@@ -89,6 +89,46 @@ class FieldNode(object):
         self.names = name and [name]
  
 
+class DebugField(object):
+    def __init__(self, nx, ny, blocks=None):
+        self.nx = nx 
+        self.ny = ny 
+
+        self.block2xy = {}
+
+        # fake container
+        self.wire_dots = []
+        self.input_dots = []
+        self.output_dots = []
+        self.wires = []
+
+        if blocks is not None:
+            for blk, pos in blocks:
+                self.add_block(blk, pos[0], pos[1])
+
+    def add_block(self, blk, x, y):
+        self.block2xy[blk] = (x, y)
+        blk.pos = (x, y)
+
+    def copy(self):
+        out = DebugField(self.nx, self.ny)
+        for blk, (x, y) in self.block2xy.items():
+            out.add_block(blk.copy(), x, y)
+
+    def show_blocks(self, sortkey=None):
+        pad = 9
+        tmpl = "{:<{pad}}"
+        print (tmpl*5).format("name", "type", "grps", "pos", "nets", pad=pad)
+        objs = self.block2xy.items()
+
+        if sortkey is not None:
+            objs.sort(key=lambda o: getattr(o[0], sortkey))
+
+        for blk, (x, y) in objs:
+            print (tmpl*5).format(
+                    blk.name, blk.type, blk.groups, blk.pos, blk.pins, pad=pad)
+        
+
 class Field(object):
     def __init__(self, cid, nx, ny):
         # circuit id

@@ -1,12 +1,12 @@
 from itertools import repeat
 
-def start (forceOptimizer):
-
-    print ""
-    print "============="
-    print "Last Phase"
-    print "============="
-    print ""
+def start (forceOptimizer, debug=False):
+    if debug:
+        print ""
+        print "============="
+        print "Last Phase"
+        print "============="
+        print ""
 
     for group in forceOptimizer.groups:
 
@@ -38,11 +38,10 @@ def start (forceOptimizer):
             if block not in group.block_north and block not in group.block_south:
                 rows[block.pos[1]] += 1
 
-        print "rows of group:", group.group_id
-        for row in rows:
-            print row
-
-
+        if debug:
+            print "rows of group:", group.group_id
+            for row in rows:
+                print row
 
         for block in group.block_east:
             columns[block.pos[0]] += 1
@@ -59,12 +58,9 @@ def start (forceOptimizer):
             if block not in group.block_east and block not in group.block_west:
                 columns[block.pos[0]] += 1
 
-        print "columns of group:", group.group_id
-        print columns
-
-
-
-
+        if debug:
+            print "columns of group:", group.group_id
+            print columns
 
         for block in group.blocks:
             if block not in group.block_north and block not in group.block_south and block not in group.block_east and block not in group.block_west:
@@ -75,7 +71,8 @@ def start (forceOptimizer):
         for block in inner_blocks:
 
             new_y = int(round(block.pos[1]))
-            print "Block:", block.name, " y:",block.pos[1], "newY:", new_y
+            if debug:
+                print "Block:", block.name, " y:",block.pos[1], "newY:", new_y
 
             if new_y > field_max_y:
                 new_y = field_max_y
@@ -103,19 +100,16 @@ def start (forceOptimizer):
                 rows[new_y + 1] += 1
                 block.pos[1] = new_y+1
 
-            print "Block:", block.name, " y:",block.pos[1]
-
-
-
-
-
+            if debug:
+                print "Block:", block.name, " y:",block.pos[1]
 
         inner_blocks = sorted(inner_blocks, cmp=block_compare_x)
 
         for block in inner_blocks:
 
             new_x = int(round(block.pos[0]))
-            print "Block:", block.name, " x:",block.pos[0], "newX:", new_x
+            if debug:
+                print "Block:", block.name, " x:",block.pos[0], "newX:", new_x
 
             if new_x > len(columns):
                 new_x = len(columns)-1
@@ -152,7 +146,8 @@ def start (forceOptimizer):
                 for neighbor in group.blocks:
                     if neighbor is not block:
                         if block.pos == neighbor.pos:
-                            print "double position:",block.name, ", ", neighbor.name, " Pos:",block.pos
+                            if debug:
+                                print "double position:",block.name, ", ", neighbor.name, " Pos:",block.pos
                             no_position = True
                             j = -1
                             i = -1
@@ -177,7 +172,8 @@ def start (forceOptimizer):
                                     if pos_y >= group.size_height:
                                         pos_y = group.size_height - 1
                                     new_pos[1] = pos_y
-                                    print "New Pos:", new_pos
+                                    if debug:
+                                        print "New Pos:", new_pos
 
                                     if j > 0:
                                         c += 1
@@ -194,7 +190,8 @@ def start (forceOptimizer):
                                     r += 1
                                 i *= -1
 
-            print "Block:", block.name, " x:",block.pos[0]
+            if debug:
+                print "Block:", block.name, " x:",block.pos[0]
 
 def block_compare_y(block_1, block_2):
     '''

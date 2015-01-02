@@ -35,8 +35,8 @@ class Schematic:
         bot_max, bot_min = None, None
         
         # block -> position mapping
-        block2pos = field.block2xy
-        
+        block2pos = field.block2xy 
+
         # draw each block at its position
         for blk, pos in block2pos.items():
             b_type, rot, mir, size  = blk.type, blk.rotation, blk.mirrored, blk.size
@@ -94,8 +94,9 @@ class Schematic:
         vss_go, vss_end = (bot_min, ny), (bot_max, ny)
         vdd_go, vdd_end = (top_min, 0), (top_max, 0)
 
-        canvas.draw_line_simple(vdd_go, vdd_end)
-        canvas.draw_line_simple(vss_go, vss_end)
+        if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
+            canvas.draw_line_simple(vdd_go, vdd_end)
+            canvas.draw_line_simple(vss_go, vss_end)
         
 
         # draw open-input dots 
