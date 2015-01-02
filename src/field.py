@@ -150,6 +150,15 @@ class DebugField(object):
         # no exception - no overlaps!
         return False
 
+    def to_field(self, cid=None):
+        out = Field(cid or "<no name>", self.nx, self.ny)
+
+        for blk, (x, y) in self.block2xy.items():
+            out.add_block(blk, (x, y))
+
+        return out
+
+
 class Field(object):
     def __init__(self, cid, nx, ny):
         # circuit id
