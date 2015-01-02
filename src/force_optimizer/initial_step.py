@@ -269,56 +269,73 @@ def set_block_relation_to_group(forceOptimizer, debug):
                     if neighbor != block and neighbor.groups != block.groups:
                         group_neighbor = search_group(neighbor.groups, forceOptimizer)
                         if debug: 
-                            print "Group_Neighbor:", group_neighbor.group_id
+                            print "Group_Neighbor:", group_neighbor.group_id 
+
+
+                        # group_neighbor        => internal neighbors 
+                        # group_neighbor.parent => external neighbors
+                        for needle, obj in [(group_neighbor, group), (group_neighbor.parent, group.parent)]:
+
+                            pairs = [("north", obj.neighbor_north, obj.block_north), ("south", obj.neighbor_south, obj.block_south),
+                                     ("east", obj.neighbor_east, obj.block_east),    ("west",  obj.neighbor_west, obj.block_west)]
+
+                            for desc, haystack, bucket in pairs:
+                                if group_neighbor in haystack:
+                                    bucket.add(block)
+                                    if debug:
+                                        print "add block: {name} to group: {gid} with orientation: {desc}".format(
+                                                name=block.name, gid=group.group_id, desc=desc)
+                        # .... instead of:
+
                         #intern group_neighbors
-                        if group_neighbor in group.neighbor_north:
-
-                            group.block_north.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
-
-                        if group_neighbor in group.neighbor_south:
-
-                            group.block_south.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
-
-                        if group_neighbor in group.neighbor_east:
-
-                            group.block_east.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
-
-                        if group_neighbor in group.neighbor_west:
-
-                            group.block_west.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
-
+                        #if group_neighbor in group.neighbor_north:
+                        #
+                        #    group.block_north.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+                        #
+                        #if group_neighbor in group.neighbor_south:
+                        #
+                        #    group.block_south.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+                        #
+                        #if group_neighbor in group.neighbor_east:
+                        #
+                        #    group.block_east.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+                        #
+                        #if group_neighbor in group.neighbor_west:
+                        #
+                        #    group.block_west.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+                        #
                         #extern group_neighbors
-                        if group_neighbor.parent in group.parent.neighbor_north:
-                            group.block_north.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
-
-                        if group_neighbor.parent in group.parent.neighbor_south:
-
-                            group.block_south.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
-
-                        if group_neighbor.parent in group.parent.neighbor_east:
-
-                            group.block_east.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
-
-                        if group_neighbor.parent in group.parent.neighbor_west:
-
-                            group.block_west.add(block)
-                            if debug: 
-                                print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
-    if debug:
+                        #if group_neighbor.parent in group.parent.neighbor_north:
+                        #    group.block_north.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
+                        #
+                        #if group_neighbor.parent in group.parent.neighbor_south:
+                        #
+                        #    group.block_south.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
+                        #
+                        #if group_neighbor.parent in group.parent.neighbor_east:
+                        #
+                        #    group.block_east.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
+                        #
+                        #if group_neighbor.parent in group.parent.neighbor_west:
+                        #
+                        #    group.block_west.add(block)
+                        #    if debug: 
+                        #        print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
+    if debug:           #
         print ""
         for group in forceOptimizer.groups:
             print group
