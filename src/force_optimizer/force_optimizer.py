@@ -67,6 +67,13 @@ class ForceAlgorithm(BaseOptimizer):
         self.group_main.neighbor_south.append(self.group_south)
         self.group_south.neighbor_north.append(self.group_main)
 
+        # static block positions
+        self.static_blocks = {}
+
+    def set_static_block(self, block, orientation):
+        assert orientation in ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        self.static_blocks[block] = orientation
+
     def _timeit(self, func, *v, **kw):
         s = time.time()
         func(*v, **kw)

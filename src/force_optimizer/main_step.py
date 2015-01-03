@@ -35,8 +35,6 @@ def search_neighbors(block, forceOptimizer):
                         value = neighbors[block_neighbor]
                         value += 1
                         neighbors[block_neighbor] = value
-    for neighbor in neighbors:
-        pass #print "Neighbor Block:", neighbor.name, "Group:", str(neighbor.groups)
     return neighbors
 
 def calculate_zft_position(forceOptimizer, debug):
@@ -46,8 +44,8 @@ def calculate_zft_position(forceOptimizer, debug):
         if debug:
             print "TURN:", turn
 
+        # zero-force-stuff: blocks not assigned to any direction
         if turn % 3 == 0:
-            # free block turn
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
                 neighbors = search_neighbors(block, forceOptimizer)
@@ -61,6 +59,9 @@ def calculate_zft_position(forceOptimizer, debug):
                         if debug:
                             print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
+        # zero-force-stuff: 
+        #    blocks in north||south  -> sum_calc_north_south
+        #    blocks in east||west    -> sum_calc_east_west
         elif turn % 3 == 1:
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
@@ -78,6 +79,7 @@ def calculate_zft_position(forceOptimizer, debug):
                         if debug:
                             print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
+        # set blocks.pos based on the group the block is assigned to 
         elif turn % 3 == 2:
             if debug:
                 print "---------"
@@ -87,7 +89,9 @@ def calculate_zft_position(forceOptimizer, debug):
             for group in forceOptimizer.groups:
 
                 # why aren't the already existing sets used inside group... ?
-                # try using the existing ones and remove these here if there is no change....
+                # try using the existing ones and remove these here if there is no change....a 
+                ##### quite sure these are never used afterwards, so using group directly should make no difference
+                ##### moreover the only thing that happens here is an pos assignment based on the group's direction (N,NE,...)
                 blocks_SE = set()
                 blocks_SW = set()
                 blocks_S = set()
@@ -104,9 +108,22 @@ def calculate_zft_position(forceOptimizer, debug):
                 #number_of_west_south = len(group.block_south & group.block_west)
                 
                 # handling of static block positions here TODO
-                for blk in group.blocks:
-                    if blk.name.startswith('ff'):
-                        blocks_NW.add(blk)
+                #for blk in group.blocks:
+                #    if blk.name.startswith('ff'):
+                #        blocks_NW.add(blk)
+                #
+                # does this even have _any_ effect? isn't the "static block" already 
+                # assigned to a set previously?!?!
+                for blk, orientation in forceOptimizer.static_blocks.items():
+                    # ugly, need block sets inside dict(), stupid to have 8 identical datastructures
+                    if orientation == "N": blocks_N.add(blk)
+                    elif orientation == "NE": blocks_NE.add(blk)
+                    elif orientation == "E": blocks_E.add(blk)
+                    elif orientation == "SE": blocks_SE.add(blk)
+                    elif orientation == "S": blocks_S.add(blk)
+                    elif orientation == "SW": blocks_SW.add(blk)
+                    elif orientation == "W": blocks_W.add(blk)
+                    elif orientation == "NW": blocks_NW.add(blk)
 
                 # check north assigned blocks, reassign to new sets 
                 # (why not simple copy the groups directly: blocksNW = group.block_north & group.block_west
