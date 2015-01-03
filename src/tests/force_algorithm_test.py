@@ -11,6 +11,8 @@ from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
 from routing import Routing
 
+DEBUG = False
+
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
     def setUp(self):
@@ -48,7 +50,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             field = self.construct_field()
             blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
             f = self.construct_force_algo_obj(field, blocks, self.pins)
-            f.run()
+            f.run(DEBUG)
 
             # Check if the main group containts only the two subgroups 0 and 1
             self.assertEqual(len(f.group_main.childs), 2)
@@ -60,7 +62,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             field = self.construct_field()
             blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
             f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
-            f.run()
+            f.run(DEBUG)
 
             # Check that both subgroups of the main group are neighbor
             self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
@@ -77,22 +79,20 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
             cid = fn.split("op")[1].split(".")[0]
             
-            #debug = True
-            debug = False
 
-            f.step_build(debug)
+            f.step_build(DEBUG)
             f1 = f.get_debug_field()
             fn = draw_field(f1, "schematic_build_{}.pdf".format(cid))
 
-            f.step_initial(debug)
+            f.step_initial(DEBUG)
             f2 = f.get_debug_field()
             fn = draw_field(f2, "schematic_init_{}.pdf".format(cid))
 
-            f.step_main(debug)
+            f.step_main(DEBUG)
             f3 = f.get_debug_field()
             fn = draw_field(f3, "schematic_main_{}.pdf".format(cid))
 
-            f.step_last(debug)
+            f.step_last(DEBUG)
             f4 = f.get_debug_field()
             fn = draw_field(f4, "schematic_final_{}.pdf".format(cid))
             
