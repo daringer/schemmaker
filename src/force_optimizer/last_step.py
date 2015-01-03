@@ -113,28 +113,31 @@ def start (forceOptimizer, debug=False):
 
             if new_x > len(columns):
                 new_x = len(columns)-1
-            if new_x < 1:
-                new_x = 1
+
 
             no_position = True
             max_position = 0
             if group.size_width > 2:
                 max_position = freeField_width-2
+                if new_x < 1:
+                    new_x = 1
             else:
                 max_position = freeField_width-1
+                if new_x < 0:
+                    new_x = 0
 
 
             if columns[new_x] < freeField_height:
                 columns[new_x] += 1
                 block.pos[0] = new_x
 
-            elif rows[new_x-1] < freeField_height and new_x-1 > 0:
-                rows[new_x-1] += 1
-                block.pos[1] = new_x-1
+            elif columns[new_x-1] < freeField_height and new_x-1 > 0:
+                columns[new_x-1] += 1
+                block.pos[0] = new_x-1
 
-            elif rows[new_x+1] < freeField_height and new_x+1 < max_position:
-                rows[new_x+1] += 1
-                block.pos[1] = new_x+1
+            elif columns[new_x+1] < freeField_height and new_x+1 < max_position:
+                columns[new_x+1] += 1
+                block.pos[0] = new_x+1
 
             block_pos = []
             for neighbor in group.blocks:
