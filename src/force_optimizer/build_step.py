@@ -34,11 +34,12 @@ def create_groups(forceOptimizer, debug=False):
     for block in forceOptimizer.blocks:
 
         group_id = block.groups  # the lowest group get all IDs
-        pins = ""
-        for p in block.pins.values():
-            pins += " " + p.net
         if debug:
-            print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
+            pins = ""
+            for p in block.pins.values():
+                pins += " " + p.net
+                print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
+ 
         group = search_group(group_id,forceOptimizer)  # check if the group allready exists
 
         if group is None:  # create a new group if needed
@@ -70,7 +71,7 @@ def create_groups(forceOptimizer, debug=False):
                     group.block_west.add(block)
 
             if p.net.lower().startswith("in"):
-                group.connected_inp
+                group.connected_inp  #+= 1
 
         if group.connected_out > 0:
             group.connected_parent_east += group.connected_out
