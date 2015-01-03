@@ -43,7 +43,7 @@ def wide_search(forceOptimizer, debug):
         queue = []
 
         for child in group.childs:
-            if debug: 
+            if debug:
                 print str(child.group_id) + " Connected to parent's east neighbor:" + str(child.connected_parent_east)
             if child.connected_parent_east > 0:
                 if start_child is None:
@@ -52,7 +52,7 @@ def wide_search(forceOptimizer, debug):
                 else:
                     queue.append(child)
 
-        if debug: 
+        if debug:
             print "Start Child:", start_child.group_id
 
         # classic wide search
@@ -61,7 +61,7 @@ def wide_search(forceOptimizer, debug):
         while len(queue) > 0:
 
             visited_child = queue.pop(0)
-            if debug: 
+            if debug:
                 print "Visited Child:", visited_child.group_id
 
             if visited_child not in forceOptimizer.wide_search_queue and visited_child not in group.childs_east_sorted:
@@ -79,7 +79,7 @@ def wide_search(forceOptimizer, debug):
 
             for neighbor in visited_child.neighbor_unsorted:
 
-                if debug: 
+                if debug:
                     print "Neighbor:", neighbor.group_id
                 # only looking for neighbors in the same group and which are not allready discovered
 
@@ -110,7 +110,7 @@ def wide_search(forceOptimizer, debug):
 def sort_extern_neighbors(east_list, debug):
 
     for group in east_list:
-        if debug: 
+        if debug:
             print "SORT EXTERN NEIGHBOR for:", str(group.group_id), "Neighbors count:", len(group.neighbor_extern)
             print "Group PArent Neighbor East count:", len(group.parent.neighbor_east)
             print "Group PArent Neighbor WEST count:", len(group.parent.neighbor_west)
@@ -135,7 +135,7 @@ def sort_extern_neighbors(east_list, debug):
                     group.connected_parent_south += 1
                     neighbor.connected_parent_north += 1
 
-        if debug: 
+        if debug:
             print "Group connected parent east:", group.connected_parent_east
             print "Group connected parent west:", group.connected_parent_west
             print "Group connected parent south:", group.connected_parent_south
@@ -150,18 +150,18 @@ def sort_unsorted_neighbor( east_list, debug):
     for group in east_list:
         groups.append(group.group_id)
 
-    if debug: 
+    if debug:
         print "Sort Unsorted Neighbor:", groups
 
     #go through all groups in their relative distance to out
     for group in east_list:
-        if debug: 
+        if debug:
             print "Group in East List:", group.group_id
 
         #if the group has neighbor which are not sorted to north, south, east, west
         if len(group.neighbor_unsorted) > 0:
 
-            if debug: 
+            if debug:
                 print "Group connected to parent north:", group.connected_parent_north
                 print "Group connected to parent south:", group.connected_parent_south
                 print "Group connected to parent east:", group.connected_parent_east
@@ -249,30 +249,29 @@ def set_block_relation_to_group(forceOptimizer, debug):
         print ""
 
     for block in forceOptimizer.blocks:
-        if debug: 
+        if debug:
             print "BLOCK:",block.name
-        
+
         group = search_group(block.groups, forceOptimizer)
 
-        if debug: 
+        if debug:
             print "Group:", group.group_id
 
         for key in forceOptimizer.dictionary_net_blocks:
 
             if block in forceOptimizer.dictionary_net_blocks[key]:
-                if debug: 
+                if debug:
                     print "Net:", key
                 for neighbor in forceOptimizer.dictionary_net_blocks[key]:
-                    if debug: 
+                    if debug:
                         print "Block_Neighbor:", neighbor.name
 
                     if neighbor != block and neighbor.groups != block.groups:
                         group_neighbor = search_group(neighbor.groups, forceOptimizer)
-                        if debug: 
-                            print "Group_Neighbor:", group_neighbor.group_id 
+                        if debug:
+                            print "Group_Neighbor:", group_neighbor.group_id
 
-
-                        # group_neighbor        => internal neighbors 
+                        # group_neighbor        => internal neighbors
                         # group_neighbor.parent => external neighbors
                         for needle, obj in [(group_neighbor, group), (group_neighbor.parent, group.parent)]:
 
@@ -287,53 +286,54 @@ def set_block_relation_to_group(forceOptimizer, debug):
                                                 name=block.name, gid=group.group_id, desc=desc)
                         # .... instead of:
 
+
                         #intern group_neighbors
                         #if group_neighbor in group.neighbor_north:
                         #
                         #    group.block_north.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
                         #
                         #if group_neighbor in group.neighbor_south:
                         #
                         #    group.block_south.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
                         #
                         #if group_neighbor in group.neighbor_east:
                         #
                         #    group.block_east.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
                         #
                         #if group_neighbor in group.neighbor_west:
                         #
                         #    group.block_west.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
                         #
                         #extern group_neighbors
                         #if group_neighbor.parent in group.parent.neighbor_north:
                         #    group.block_north.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_north:", block in group.block_north
                         #
                         #if group_neighbor.parent in group.parent.neighbor_south:
                         #
                         #    group.block_south.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_south:", block in group.block_south
                         #
                         #if group_neighbor.parent in group.parent.neighbor_east:
                         #
                         #    group.block_east.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_east:", block in group.block_east
                         #
                         #if group_neighbor.parent in group.parent.neighbor_west:
                         #
                         #    group.block_west.add(block)
-                        #    if debug: 
+                        #    if debug:
                         #        print "add ", block.name, " to ", group.group_id, ".block_west:", block in group.block_west
     if debug:           #
         print ""
@@ -350,13 +350,13 @@ def calculate_groups_frame(forceOptimizer, debug):
         print "====================="
         print ""
 
-    if debug: 
+    if debug:
         for group in forceOptimizer.groups:
             print "Group:", group.group_id
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
 
-    if debug: 
+    if debug:
         for group in forceOptimizer.groups:
             print "SortedGroup:", group.group_id
 
@@ -387,7 +387,7 @@ def calculate_groups_frame(forceOptimizer, debug):
             for child in group.child_south:
                 width_south += child.size_width
 
-        if debug: 
+        if debug:
             print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
 
         #the bigger width of north and south is the width for the group
@@ -400,10 +400,10 @@ def calculate_groups_frame(forceOptimizer, debug):
         #if the group area is to small to place all blocks without overlapping
         while (group.size_height * group.size_width) < len(group.blocks):
             #increment the group width and height by 1
-            group.size_width = group.size_width + 1
+            #group.size_width = group.size_width + 1
             group.size_height = group.size_height + 1
 
-        if debug: 
+        if debug:
             print group
 
     if forceOptimizer.group_connected_to_parent_neighbor_set_parent_size:
@@ -434,7 +434,7 @@ def calculate_groups_position(forceOptimizer, debug):
         print ""
 
     for group in forceOptimizer.groups:
-        if debug: 
+        if debug:
             print "Group:", group.group_id
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
@@ -442,7 +442,7 @@ def calculate_groups_position(forceOptimizer, debug):
     for group in forceOptimizer.groups:
         group.position_x = -1
         group.position_y = -1
-        if debug: 
+        if debug:
             print "SortedGroup:", group.group_id
 
     groups = forceOptimizer.groups[:]
@@ -469,7 +469,7 @@ def calculate_groups_position(forceOptimizer, debug):
             pins = ""
             for p in block.pins.values():
                 pins += " " + p.net
-            if debug: 
+            if debug:
                 print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "Pins:", pins
 
         for child in group.childs:

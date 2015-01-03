@@ -42,7 +42,7 @@ def search_neighbors(block, forceOptimizer):
 def calculate_zft_position(forceOptimizer, debug):
     turn = 0
     while (turn != 18):
-    
+
         if debug:
             print "TURN:", turn
 
@@ -55,9 +55,9 @@ def calculate_zft_position(forceOptimizer, debug):
                     if block not in group.block_east and block not in group.block_west:
                         if debug:
                             print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        
+
                         block.pos = sum_calculate_free(block, neighbors, group)
-                        
+
                         if debug:
                             print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
@@ -102,6 +102,9 @@ def calculate_zft_position(forceOptimizer, debug):
                         blocks_NW.add(block)
                     elif block not in group.block_east and block not in group.block_west:
                         blocks_N.add(block)
+                    if block.name.startswith('i'):
+                        blocks_NW.add(block)
+                        number_of_west_north += 1
 
                 if number_of_east_north > 1:
                     position = group.size_width - 1
@@ -121,7 +124,7 @@ def calculate_zft_position(forceOptimizer, debug):
                             print "Group:", group.group_id, " Block_NW"
                             print block, block.pos
                         block.pos[0] = position
-    
+
                         if debug:
                             print block, block.pos
                         position += 1
