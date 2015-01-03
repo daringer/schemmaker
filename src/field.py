@@ -666,7 +666,13 @@ class Field(object):
         for b, (x, y) in self.block2xy.items():
             if b.type == "pmos":
                 b.rotate(2)
-            if "in2" in [p.net for p in b.pins.values()]:
+
+            blk_nets = [p.net for p in b.pins.values()]
+            if "in2" in blk_nets:
+                b.mirror()
+
+            # all nmos, without 2 conns to the same net, mirror!
+            if len(set(blk_nets)) == len(blk_nets) and b.type == "nmos":
                 b.mirror()
 
     def show_occ(self):
