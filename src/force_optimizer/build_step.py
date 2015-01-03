@@ -41,11 +41,17 @@ def create_groups(forceOptimizer, debug=False):
             print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
         group = search_group(group_id,forceOptimizer)  # check if the group allready exists
 
+
+
         if group is None:  # create a new group if needed
             if debug:
                 print ("Create a new Group with ID", group_id)
             group = Group(group_id)
             forceOptimizer.groups.append(group)
+
+        if block.name.startswith('i'):
+            group.block_north.add(block);
+            group.block_west.add(block)
 
         #check the connection to important pins
         for p in block.pins.values():

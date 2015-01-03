@@ -102,9 +102,7 @@ def calculate_zft_position(forceOptimizer, debug):
                         blocks_NW.add(block)
                     elif block not in group.block_east and block not in group.block_west:
                         blocks_N.add(block)
-                    if block.name.startswith('i'):
-                        blocks_NW.add(block)
-                        number_of_west_north += 1
+
 
                 if number_of_east_north > 1:
                     position = group.size_width - 1
@@ -118,6 +116,7 @@ def calculate_zft_position(forceOptimizer, debug):
                         position -= 1
 
                 if number_of_west_north > 1:
+
                     position = 0
                     for block in blocks_NW:
                         if debug:
@@ -387,10 +386,12 @@ def sum_calculate_free(block, neighbors, group):
     if len(neighbors) > 1:
 
         for neighbor in neighbors:
-
-            weight = neighbors[neighbor]
+            if block.name == "m7":
+                print "m7 Neighbor:", neighbor.name, " pos:",neighbor.pos
+            #weight = neighbors[neighbor]
+            weight = 1
             if neighbor in group.block_east or neighbor in group.block_west or neighbor in group.block_south or neighbor in group.block_north:
-                weight = 5
+                weight = weight*1
             if neighbor is not block:
                 if neighbor.pos[0] < block.pos[0]:
                     x += weight * (neighbor.pos[0] + 1)

@@ -122,18 +122,22 @@ def sort_extern_neighbors(east_list, debug):
                 if neighbor.parent in group.parent.neighbor_east:
                     group.connected_parent_east += 1
                     neighbor.connected_parent_west += 1
+                    find_blocks(group, neighbor, 2)
 
                 if neighbor.parent in group.parent.neighbor_west:
                     group.connected_parent_west += 1
                     neighbor.connected_parent_east += 1
+                    find_blocks(group, neighbor, 4)
 
                 if neighbor.parent in group.parent.neighbor_north:
                     group.connected_parent_north += 1
                     neighbor.connected_parent_south += 1
+                    find_blocks(group, neighbor, 1)
 
                 if neighbor.parent in group.parent.neighbor_south:
                     group.connected_parent_south += 1
                     neighbor.connected_parent_north += 1
+                    find_blocks(group, neighbor, 3)
 
         if debug:
             print "Group connected parent east:", group.connected_parent_east
@@ -141,6 +145,30 @@ def sort_extern_neighbors(east_list, debug):
             print "Group connected parent south:", group.connected_parent_south
             print "Group connected parent north:", group.connected_parent_north
 
+def find_blocks(group, neighbor, orientation):
+    for block in group.blocks:
+
+        for n_block in neighbor.blocks:
+            for pin in block.pins.values():
+                for n_pin in n_block.pins.values():
+
+                    if pin.net not in ['vdd', 'gnd', 'vss', 'out1', 'out2'] and pin.net == n_pin.net:
+                        if orientation == 1:
+                            # Neighbor is NORTH
+                            group.block_north.add(block);
+                            neighbor.block_south.add(n_block)
+                        if orientation == 2:
+                            # Neighbor is EAST
+                            group.block_east.add(block);
+                            neighbor.block_west.add(n_block)
+                        if orientation == 3:
+                            # Neighbor is SOUTH
+                            neighbor.block_north.add(n_block);
+                            group.block_south.add(block)
+                        if orientation == 4:
+                            # Neighbor is WEST
+                            neighbor.block_east.add(n_block);
+                            group.block_west.add(block)
 
 def sort_unsorted_neighbor( east_list, debug):
     '''
@@ -210,7 +238,7 @@ def sort_unsorted_neighbor( east_list, debug):
                         neighbor.block_south.add(block)
 
                     for block in group.neighbors[neighbor]:
-                        group.block_north.add(block)
+                        group.add(block)
                 '''
         if debug:
             print group
