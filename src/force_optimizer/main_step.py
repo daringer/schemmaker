@@ -60,8 +60,8 @@ def calculate_zft_position(forceOptimizer, debug):
                             print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
         # zero-force-stuff: 
-        #    blocks in north||south  -> sum_calc_north_south
-        #    blocks in east||west    -> sum_calc_east_west
+        #    block in north||south  -> sum_calc_north_south
+        #    block in east||west    -> sum_calc_east_west
         elif turn % 3 == 1:
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
@@ -354,114 +354,123 @@ def calculate_border_north_south_position(block,neighbors):
             left = left + 1
     return left
 
-def sum_calculate_north_south_group(group, debug):
-    '''
-    weight =
-    '''
 
-    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
-    group_x = count_neighbors * group.position_x
+#### oooooh ok this is never used, nice... taking it out... 
+#### makes sense now why this makes no sense!
+####
+#### missleading naming .... group always a block! =?!?!= TODO
+#def sum_calculate_north_south_group(group, debug):
+#    
+#    # overall neighbor count , why not sum( len(x) for x in group.neighbors )? 
+#    # is group.neighbors != group.neighbor_{south|north|east|west} together ?!
+#    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
+#
+#    # multiplying the group's x-position with the overall neighbor count!?
+#    group_x = count_neighbors * group.position_x
+#
+#    # only calc if neighbors > 1
+#    if count_neighbors > 1:
+#
+#        for neighbor in group.neighbors:
+#            # ah group.neighbors[x] is the weight for neighbor, ugly/missleading var-naming TODO
+#            group_x += len(group.neighbors[neighbor]) * (neighbor.position_x)
+#    
+#        # divisor scales with number of neighbors ?
+#        div = count_neighbors
+#    
+#        # over all neighbors ?
+#        for neighbor in group.neighbors:
+#            if debug:
+#                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+#            # further increase divisor by the number of neighbors for each neighbors
+#            div += len(group.neighbors[neighbor])
+#
+#        # actual calculation ....
+#        group_x /= div
+#
+#    # place at group's x-pos if there is only one neighbor - why only one and not none ?!
+#    else:
+#        group_x = group.position_x
+#
+#    # if new position is outside its parent groups, trim it (once? why not more often??? why not while??)
+#    # further -> why is this even possible?
+#    if group_x > group.parent.size_width - 1:
+#        group_x = group.parent.size_width - 1
+#
+#    # assign new position ....
+#    group.position_x = group_x
+#
+#def sum_calculate_east_west_group(group, debug):
+#    '''
+#    weight =
+#    '''
+#
+#    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
+#    group_y = count_neighbors * group.position_y
+#
+#    if count_neighbors > 1:
+#
+#        for neighbor in group.neighbors:
+#            group_y += len(group.neighbors[neighbor]) * (neighbor.position_y )
+#        
+#        div = count_neighbors
+#
+#        for neighbor in group.neighbors:
+#            if debug:
+#                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+#            div += len(group.neighbors[neighbor])
+#
+#        group_y /= div
+#    else:
+#        group_y = group.position_y
+#
+#
+#
+#    if group_y > group.parent.size_height - 1:
+#        group_y = group.parent.size_height - 1
+#
+#    group.position_y = group_y
 
-    if count_neighbors > 1:
-
-        for neighbor in group.neighbors:
-            group_x += len(group.neighbors[neighbor]) * (neighbor.position_x )
-
-
-        div = count_neighbors
-
-        for neighbor in group.neighbors:
-            if debug:
-                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
-            div += len(group.neighbors[neighbor])
-
-        group_x /= div
-
-
-    else:
-        group_x = group.position_x
-
-
-
-    if group_x > group.parent.size_width - 1:
-        group_x = group.parent.size_width - 1
-
-    group.position_x = group_x
-
-def sum_calculate_east_west_group(group, debug):
-    '''
-    weight =
-    '''
-
-    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
-    group_y = count_neighbors * group.position_y
-
-    if count_neighbors > 1:
-
-        for neighbor in group.neighbors:
-            group_y += len(group.neighbors[neighbor]) * (neighbor.position_y )
-
-
-        div = count_neighbors
-
-        for neighbor in group.neighbors:
-            if debug:
-                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
-            div += len(group.neighbors[neighbor])
-
-        group_y /= div
-
-
-    else:
-        group_y = group.position_y
-
-
-
-    if group_y > group.parent.size_height - 1:
-        group_y = group.parent.size_height - 1
-
-    group.position_y = group_y
-
-def sum_calculate_free_group(group, debug):
-    '''
-    weight  = 1 between free blocks
-            = 3 between border blocks
-    '''
-
-    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
-    group_x = count_neighbors * group.position_x
-    group_y = count_neighbors * group.position_y
-
-    if count_neighbors > 1:
-
-        for neighbor in group.neighbors:
-
-            group_x += len(group.neighbors[neighbor]) * (neighbor.position_x )
-            group_y += len(group.neighbors[neighbor]) * (neighbor.position_y )
-
-        div = count_neighbors
-
-        for neighbor in group.neighbors:
-            if debug:
-                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
-            div += len(group.neighbors[neighbor])
-
-        group_x /= div
-        group_y /= div
-
-    else:
-        group_x = group.position_x
-        group_y = group.position_y
-
-    if group_y > group.parent.size_height - 1:
-        group_y = group.parent.size_height - 1
-    if group_x > group.parent.size_width - 1:
-        group_x = group.parent.size_width - 1
-
-    group.position_x = group_x
-    group.position_y = group_y
-
-
+#def sum_calculate_free_group(group, debug):
+#    '''
+#    weight  = 1 between free blocks
+#            = 3 between border blocks
+#    '''
+#
+#    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
+#    group_x = count_neighbors * group.position_x
+#    group_y = count_neighbors * group.position_y
+#
+#    if count_neighbors > 1:
+#
+#        for neighbor in group.neighbors:
+#
+#            group_x += len(group.neighbors[neighbor]) * (neighbor.position_x )
+#            group_y += len(group.neighbors[neighbor]) * (neighbor.position_y )
+#
+#        div = count_neighbors
+#
+#        for neighbor in group.neighbors:
+#            if debug:
+#                print "Neighbor:", neighbor.group_id, "Weight:",len(group.neighbors[neighbor]), "PosX:", neighbor.position_x, "PosY:", neighbor.position_y
+#            div += len(group.neighbors[neighbor])
+#
+#        group_x /= div
+#        group_y /= div
+#
+#    else:
+#        group_x = group.position_x
+#        group_y = group.position_y
+#
+#    if group_y > group.parent.size_height - 1:
+#        group_y = group.parent.size_height - 1
+#    if group_x > group.parent.size_width - 1:
+#        group_x = group.parent.size_width - 1
+#
+#    group.position_x = group_x
+#    group.position_y = group_y
+#
+#
 
 def sum_calculate_free(block, neighbors, group):
     '''
@@ -528,35 +537,49 @@ def sum_calculate_north_south(block, neighbors, group):
     '''
     x = 0.0
     div = 0
-
+    
+    # why > 1 and not > 0 ? changing it to 0 seems to make no difference.... TODO
     if len(neighbors) > 1:
-
+        # neighbors is a dict() <block> -> number ?! most values are 1 ?
+        # is neighbors a weight map ??? extremly missleading var-name! but yes looks like WEIGHT!!!
         for neighbor in neighbors:
-
             if neighbor is not block:
+                # for each neighbor left of this block add 
+                
                 if neighbor.pos[0] < block.pos[0]:
+                    # multiply number associated to block with the neighbors x-pos +1
                     x += neighbors[neighbor] * (neighbor.pos[0] + 1)
                 else:
+                    # multiply number associated to block with the neighbors x-pos -1
                     x += neighbors[neighbor] * (neighbor.pos[0] - 1)
+                
+                ###
+                ### not add/sub 1 in this lines before seems to change nothing!?
+                ### why are they there?
+                ### the following makes no qualitative difference:
+                #x += neighbors[neighbor] * neighbor.pos[0]
 
+            # add weight to divisor
             div += neighbors[neighbor]
-
+        
+        # calculating the averge of all x-pos summarized ?
         x /= div
-
     else:
         x = block.pos[0]
 
     #x = math.ceil(x) # round to next int
 
+    # why can this happen??
     if x > group.size_width - 1:
         x = group.size_width - 1
 
+    # why can this happen?
     if x < 0:
         x = 0
 
     return [x, block.pos[1]]
 
-
+# same questions as for the function before
 def sum_calculate_east_west(block, neighbors, group):
     '''
     weight =
@@ -593,16 +616,17 @@ def sum_calculate_east_west(block, neighbors, group):
     return [block.pos[0], y]
 
 
-def calculate_pin_position(block, neighbor, pin, debug):
-    pos = []
-    for pin1 in block.pins.values():
-        for pin2 in neighbor.pins.values():
-            if debug:
-                print "block.pins[pin].net:",block.pins[pin].net, "pin2.net:",pin2.net
-            if pin1.net == pin2.net:# == block.pins[pin].net:
-                pos.append(pin2.pos[0])
-                pos.append(pin2.pos[1])
-                pos[0] = pos[0]/2.0
-                pos[1] = pos[1]/2.0
-                return pos
-    return -1
+# never used??? why is this here??
+#def calculate_pin_position(block, neighbor, pin, debug):
+#    pos = []
+#    for pin1 in block.pins.values():
+#        for pin2 in neighbor.pins.values():
+#            if debug:
+#                print "block.pins[pin].net:",block.pins[pin].net, "pin2.net:",pin2.net
+#            if pin1.net == pin2.net:# == block.pins[pin].net:
+#                pos.append(pin2.pos[0])
+#                pos.append(pin2.pos[1])
+#                pos[0] = pos[0]/2.0
+#                pos[1] = pos[1]/2.0
+#                return pos
+#    return -1
