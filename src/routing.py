@@ -3,7 +3,8 @@
 Keeps the routing/wiring algorithm 
 
 """
-import heapq
+import heapq 
+import sys
 
 from field import Field, FieldException, FieldNode
 
@@ -44,10 +45,6 @@ class Routing:
             cost_matrix[pos] = 0
             heapq.heappush(heap, (0, pos))
             
-            print "ROUTING - from: ", from_pos , " to: ", to_pos
-
-            #if from_pos not in self.graph:
-            #    assert False, "find_path() called with target pos not inside graph"
             if from_pos not in self.graph:
                 raise RoutingException("from: " + str(from_pos) + " was not found in graph")
     
@@ -108,10 +105,6 @@ class Routing:
             target_pos, pos = from_pos, to_pos
             direction, last_direction = None, None
             
-            # make sure we can get there / don't we do this up there
-            #if pos not in path_matrix:
-            #    return (None, None)
-            
             # start at destination and go backward through the path_matrix
             while pos != target_pos:
                 last_pos, pos = pos, path_matrix[pos]
@@ -124,7 +117,6 @@ class Routing:
                 
             path += [pos]
             return (path, cost_matrix[to_pos])
-    
     
     def path_cost(self, path, dist=None, trivial=False):
         """Calculate the costs (distance) of an path"""
@@ -176,8 +168,11 @@ class Routing:
         
         remaining = initial_open - available_targets
         
+        print "Routing :: ",
         # find shortest full-route (pseudo-tsp!?)
         while len(remaining) > 0:
+            sys.stdout.write(".")
+            sys.stdout.flush()
             # find all paths to targets
             min_cost, min_path, min_from, min_target = None, None, None, None
             for from_pos in remaining:
@@ -193,10 +188,9 @@ class Routing:
                     min_path = path
                     min_target = path[0]
                     min_from = from_pos
-                        
+            
             if min_cost is None:
                 raise RoutingException("from: " + str(remaining) + " to: " + str(available_targets))
-                #continue
             
             # found shortest
             m_set = set()
@@ -208,7 +202,8 @@ class Routing:
             remaining = remaining - m_set
             
             conns[(min_from, min_target)] = (min_path, min_cost)
-            
+
+        print 
         return conns
 
     def get_field_nodes(self, scaling):
