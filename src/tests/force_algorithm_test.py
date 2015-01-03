@@ -15,13 +15,13 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def setUp(self):
         self.test_data_dir = "../../testdata/"
         #self.fn = "circuit_op8.vhdl"
-        self.fn = "circuit_bi1_0op337_1.vhdl"        
+        self.fn = "circuit_bi1_0op337_1.vhdl"
         #self.fn = "circuit_bi1_0op324_0.vhdl"
-        #self.fn = "circuit_bi1_0op324_2.vhdl"
-        
+       # self.fn = "circuit_bi1_0op324_2.vhdl"
+
         self.files = os.listdir(self.test_data_dir)
         path = os.path.join(self.test_data_dir, self.fn)
-        
+
         output = parse(path)
 
         self.blocks = []
@@ -31,7 +31,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
         self.field = Field("test_circ", 40, 40)
         self.pins = (['vdd'], ['gnd', 'vss'], ['out'], ['out2'])
-        
+
         self.raw_data = [
             {'conns': ['net2', 'in1', 'net1'],       'type': 'pmos',       'name': 'm1',  'groups': [0, 0], 'pos': (4,4), 'rot': 2, 'mir': False},
             {'conns': ['out1', 'in2', 'net1'],       'type': 'pmos',       'name': 'm2',  'groups': [0, 0], 'pos': (6,4), 'rot': 2, 'mir': True},
@@ -59,10 +59,10 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         return ForceAlgorithm(field, blocks, *pins)
 
     #def xTODO_test_simple(self):
-    #    
+    #
     #    self.blocks = []
     #    self.field = Field("test_circ", 40, 40)
-    
+
     #    for i, b_data in enumerate(self.raw_data):
     #        b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
     #        b.rotate(b_data["rot"])
@@ -113,7 +113,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         f.step_last(debug)
         f4 = f.get_debug_field()
         fn = draw_field(f4, "schematic_final.pdf")
-        
+
         # CHECK IF OVERLAPPING BLOCKS WERE FOUND
         overlap = f4.has_overlapping_blocks()
         if overlap:
