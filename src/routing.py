@@ -210,7 +210,6 @@ class Routing:
             """Build and return a dict of {pos: FieldNode()} for all visitable nodes"""
             pos_map, net_map = {}, {}
             for _blk_pos, block in self.field.iter_xy_pos_block(split=False, unique=True):
-                print block
                 blk_pos = self.scale_up(_blk_pos, scaling)
                 for _pos, pin in block.pins.items():
                     
