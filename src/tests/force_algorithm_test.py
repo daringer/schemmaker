@@ -15,7 +15,10 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
     def setUp(self):
         self.test_data_dir = "../../testdata/"
+        
         self.files = os.listdir(self.test_data_dir)
+        self.files = [x for x in self.files if "324_2" in x]
+        
         self.pins = (['vdd'], ['gnd', 'vss'], ['out1'], ['out2'])
 
     # fixture cleanup, called AFTER each test
@@ -106,6 +109,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
                 print "#### {} ####".format(cid)
                 f = f4.to_field()
                 f.optimize_size()
+                f.optimize_block_dirs()
                 #f.expand_field(4)
                 r = Routing(f)
                 ret = r.route(4)

@@ -662,6 +662,13 @@ class Field(object):
             if self.is_row_empty(y):
                 self.remove_row(y)
 
+    def optimize_block_dirs(self):
+        for b, (x, y) in self.block2xy.items():
+            if b.type == "pmos":
+                b.rotate(2)
+            if "in2" in [p.net for p in b.pins.values()]:
+                b.mirror()
+
     def show_occ(self):
         """Show ascii art schematic, occupation based"""
         space = False
