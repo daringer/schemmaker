@@ -17,7 +17,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         self.test_data_dir = "../../testdata/"
         
         self.files = os.listdir(self.test_data_dir)
-        self.files = [x for x in self.files if "324_2" in x]
+        self.files = [x for x in self.files if "324_0" in x]
         
         self.pins = (['vdd'], ['gnd', 'vss'], ['out1'], ['out2'])
 

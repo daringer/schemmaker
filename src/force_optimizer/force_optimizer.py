@@ -73,25 +73,25 @@ class ForceAlgorithm(BaseOptimizer):
         e = time.time()
         return e - s
 
-    def run(self, debug=False):
+    def run(self, debug=True):
         self.step_build(debug)
         self.step_initial(debug)
         self.step_main(debug)
         self.step_last(debug)
 
-    def step_build(self, debug=False):
+    def step_build(self, debug=True):
         self.interval_build_step = \
             self._timeit(build_step.start, self, debug)
 
-    def step_initial(self, debug=False):
+    def step_initial(self, debug=True):
         self.interval_initial_step = \
             self._timeit(initial_step.start, self, debug)
 
-    def step_main(self, debug=False):
+    def step_main(self, debug=True):
         self.interval_main_step = \
             self._timeit(main_step.start, self, debug)
 
-    def step_last(self, debug=False):
+    def step_last(self, debug=True):
         self.interval_last_step = \
             self._timeit(last_step.start, self, debug)
 
@@ -100,7 +100,7 @@ class ForceAlgorithm(BaseOptimizer):
         blksize = 2
 
         # calc grp positions // kinda ugly ;D
-        # feels like I need to do a breadth-first search to correctly 
+        # feels like I need to do a breadth-first search to correctly
         # inherit from top-lvl-grp downwards!
         grp2pos = {}
         next_grp = None
@@ -114,7 +114,7 @@ class ForceAlgorithm(BaseOptimizer):
                         g.position_y * g.size_height + g.parent.position_y * blksize
                     )
                     next_stack.extend(grp.group_id[0] for grp in g.childs)
-            
+
         # actually calc block positions
         out = DebugField(self.field.nx, self.field.ny)
         for g in self.groups:
@@ -130,7 +130,6 @@ class ForceAlgorithm(BaseOptimizer):
         print "## initial_step took {:.3f} sec.".format(self.interval_initial_step)
         print "## main_step took {:.3f} sec.".format(self.interval_main_step)
         print "## last_step took {:.3f} sec.".format(self.interval_last_step)
-
 
 def search_group(group_id, forceOptimizer):
     '''
