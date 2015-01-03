@@ -150,6 +150,15 @@ class DebugField(object):
         # no exception - no overlaps!
         return False
 
+    def to_field(self, cid=None):
+        out = Field(cid or "<no name>", self.nx, self.ny)
+
+        for blk, (x, y) in self.block2xy.items():
+            out.add_block(blk, (x, y))
+
+        return out
+
+
 class Field(object):
     def __init__(self, cid, nx, ny):
         # circuit id
@@ -652,6 +661,13 @@ class Field(object):
         for y in xrange(0, self.ny - 1, 2):
             if self.is_row_empty(y):
                 self.remove_row(y)
+
+    def optimize_block_dirs(self):
+        for b, (x, y) in self.block2xy.items():
+            if b.type == "pmos":
+                b.rotate(2)
+            if "in2" in [p.net for p in b.pins.values()]:
+                b.mirror()
 
     def show_occ(self):
         """Show ascii art schematic, occupation based"""
