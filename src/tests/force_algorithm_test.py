@@ -11,7 +11,7 @@ from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
 from routing import Routing
 
-DEBUG = True
+DEBUG = False
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test

@@ -86,48 +86,77 @@ def calculate_zft_position(forceOptimizer, debug):
 
             for group in forceOptimizer.groups:
 
+                blocks_SE = set()
+                blocks_SW = set()
+                blocks_S = set()
+                blocks_NE = set()
+                blocks_NW = set()
+                blocks_N = set()
+                
                 number_of_east_north = len(group.block_north & group.block_east)
                 number_of_west_north = len(group.block_north & group.block_west)
                 number_of_east_south = len(group.block_south & group.block_east)
                 number_of_west_south = len(group.block_south & group.block_west)
+                
+                # handling of static block positions here TODO
+                for blk in group.blocks:
+                    if blk.name.startswith('i'):
+                        blocks_NW.add(blk)
+                        number_of_west_north += 1
 
-                #NORTH
-                blocks_NE = set()
-                blocks_NW = set()
-                blocks_N = set()
-                for block in group.block_north:
-                    if block in group.block_east:
-                        blocks_NE.add(block)
-                    elif block in group.block_west:
-                        blocks_NW.add(block)
-                    elif block not in group.block_east and block not in group.block_west:
-                        blocks_N.add(block)
+                # check north assigned blocks, reassign to new sets 
+                # (why not simple copy the groups directly: blocksNW = group.block_north & group.block_west
+                #for block in group.block_north:
+                #    if block in group.block_east:
+                #        blocks_NE.add(block)
+                #    elif block in group.block_west:
+                #        blocks_NW.add(block)
+                #    elif block not in group.block_east and block not in group.block_west:
+                #        blocks_N.add(block)
+                blocks_NE |= group.block_north & group.block_east
+                blocks_NW |= group.block_north & group.block_west
+                blocks_N  |= group.block_north - (group.block_east | group.block_west)
 
+                ### assign designated pos for blks, based on group size/pos
+                #if number_of_east_north > 1:
+                #    position = group.size_width - 1
+                #    for block in blocks_NE:
+                #        if debug:
+                #            print "Group:", group.group_id, " Block_NE"
+                #            print block, block.pos
+                #        block.pos[0] = position
+                #        if debug:
+                #            print block, block.pos
+                #        position -= 1
+                
+                # place NE blocks at right border of group
+                x_pos = group.size_width - 1
+                for blk in blocks_NE:
+                    blk.pos[0] = x_pos
+                    x_pos -= 1
 
-                if number_of_east_north > 1:
-                    position = group.size_width - 1
-                    for block in blocks_NE:
-                        if debug:
-                            print "Group:", group.group_id, " Block_NE"
-                            print block, block.pos
-                        block.pos[0] = position
-                        if debug:
-                            print block, block.pos
-                        position -= 1
+                #if number_of_west_north > 1:
+                #    position = 0
+                #    for block in blocks_NW:
+                #        if debug:
+                #            print "Group:", group.group_id, " Block_NW"
+                #            print block, block.pos
+                #        block.pos[0] = position
+                #
+                #        if debug:
+                #            print block, block.pos
+                #        position += 1
+                
+                # place NW blocks at left border of group
+                x_pos = 0
+                for blk in blocks_NW:
+                    blk.pos[0] = x_pos
+                    x_pos += 1
 
-                if number_of_west_north > 1:
-
-                    position = 0
-                    for block in blocks_NW:
-                        if debug:
-                            print "Group:", group.group_id, " Block_NW"
-                            print block, block.pos
-                        block.pos[0] = position
-
-                        if debug:
-                            print block, block.pos
-                        position += 1
-
+                # ok, blocks_N is a copy of group.block_north!
+                # then one block from blocks_N is moved in its position according to the 
+                # number of blocks in group.block_north - wh00000t!
+                #
                 for block in blocks_N:
                     if debug:
                         print "Group:", group.group_id, " Block_North"
@@ -135,11 +164,15 @@ def calculate_zft_position(forceOptimizer, debug):
                     block.pos[0] = calculate_border_north_south_position(block, group.block_north)
                     if debug:
                         print block, block.pos
+                
+                # place N blocks left to right starting at last NW position
+                #for blk in blocks_N:
+                #    blk.pos = [nw_x_pos, blk.pos[1]]
+                #    nw_x_pos += 1
+                
+                ############################################
 
                 #SOUTH
-                blocks_SE = set()
-                blocks_SW = set()
-                blocks_S = set()
                 for block in group.block_south:
                     if block in group.block_east:
                         blocks_SE.add(block)
