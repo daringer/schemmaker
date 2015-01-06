@@ -93,14 +93,23 @@ class ForceAlgorithm(BaseOptimizer):
     def step_initial(self, debug=True):
         self.interval_initial_step = \
             self._timeit(initial_step.start, self, debug)
+        if debug:
+            for block in self.blocks:
+                print block.name, block.pos
 
     def step_main(self, debug=True):
         self.interval_main_step = \
             self._timeit(main_step.start, self, debug)
+        if debug:
+            for block in self.blocks:
+                print block.name, block.pos
 
     def step_last(self, debug=True):
         self.interval_last_step = \
             self._timeit(last_step.start, self, debug)
+        if debug:
+            for block in self.blocks:
+                print block.name, block.pos
 
     def get_debug_field(self):
         # HELP ME, UUGLYYY :)))) but works!

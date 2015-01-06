@@ -1,4 +1,5 @@
 import math
+from itertools import repeat
 
 def start (forceOptimizer, debug=False):
     if debug:
@@ -44,6 +45,9 @@ def calculate_zft_position(forceOptimizer, debug):
         if debug:
             print "TURN:", turn
 
+        # collect all position bevor setting them to the blocks
+        new_block_pos = {}
+
         # zero-force-stuff: blocks not assigned to any direction
         if turn % 3 == 0:
             for block in forceOptimizer.blocks:
@@ -54,12 +58,14 @@ def calculate_zft_position(forceOptimizer, debug):
                         if debug:
                             print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
 
-                        block.pos = sum_calculate_free(block, neighbors, group)
+                        # block.pos = sum_calculate_free(block, neighbors, group)
+                        new_block_pos[block] = sum_calculate_free(block, neighbors, group)
 
                         if debug:
-                            print "Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-
-        # zero-force-stuff: 
+                            print "Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+            for key in new_block_pos:
+                key.pos = new_block_pos[key]
+        # zero-force-stuff:
         #    block in north||south  -> sum_calc_north_south
         #    block in east||west    -> sum_calc_east_west
         elif turn % 3 == 1:
@@ -69,17 +75,20 @@ def calculate_zft_position(forceOptimizer, debug):
                 if (block in group.block_north or block in group.block_south) and (block not in group.block_east and block not in group.block_west):
                         if debug:
                             print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        block.pos = sum_calculate_north_south(block, neighbors, group)
+                        # block.pos = sum_calculate_north_south(block, neighbors, group)
+                        new_block_pos[block] = sum_calculate_north_south(block, neighbors, group)
                         if debug:
-                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
                 if (block in group.block_east or block in group.block_west) and (block not in group.block_north and block not in group.block_south):
                         if debug:
                             print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        block.pos = sum_calculate_east_west(block, neighbors, group)
+                        # block.pos = sum_calculate_east_west(block, neighbors, group)
+                        new_block_pos[block] = sum_calculate_east_west(block, neighbors, group)
                         if debug:
-                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-
-        # set blocks.pos based on the group the block is assigned to 
+                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+            for key in new_block_pos:
+                key.pos = new_block_pos[key]
+        # set blocks.pos based on the group the block is assigned to
         elif turn % 3 == 2:
             if debug:
                 print "---------"
@@ -89,7 +98,7 @@ def calculate_zft_position(forceOptimizer, debug):
             for group in forceOptimizer.groups:
 
                 # why aren't the already existing sets used inside group... ?
-                # try using the existing ones and remove these here if there is no change....a 
+                # try using the existing ones and remove these here if there is no change....a
                 ##### quite sure these are never used afterwards, so using group directly should make no difference
                 ##### moreover the only thing that happens here is an pos assignment based on the group's direction (N,NE,...)
                 blocks_SE = set()
@@ -100,19 +109,19 @@ def calculate_zft_position(forceOptimizer, debug):
                 blocks_N = set()
                 blocks_E = set()
                 blocks_W = set()
-                
+
                 # has no use, checking for a size of a container > 1 before , why?
                 #number_of_east_north = len(group.block_north & group.block_east)
                 #number_of_west_north = len(group.block_north & group.block_west)
                 #number_of_east_south = len(group.block_south & group.block_east)
                 #number_of_west_south = len(group.block_south & group.block_west)
-                
+
                 # handling of static block positions here TODO
                 #for blk in group.blocks:
                 #    if blk.name.startswith('ff'):
                 #        blocks_NW.add(blk)
                 #
-                # does this even have _any_ effect? isn't the "static block" already 
+                # does this even have _any_ effect? isn't the "static block" already
                 # assigned to a set previously?!?!
                 for blk, orientation in forceOptimizer.static_blocks.items():
                     # ugly, need block sets inside dict(), stupid to have 8 identical datastructures
@@ -125,7 +134,7 @@ def calculate_zft_position(forceOptimizer, debug):
                     elif orientation == "W": blocks_W.add(blk)
                     elif orientation == "NW": blocks_NW.add(blk)
 
-                # check north assigned blocks, reassign to new sets 
+                # check north assigned blocks, reassign to new sets
                 # (why not simple copy the groups directly: blocksNW = group.block_north & group.block_west
                 #for block in group.block_north:
                 #    if block in group.block_east:
@@ -134,9 +143,13 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        blocks_NW.add(block)
                 #    elif block not in group.block_east and block not in group.block_west:
                 #        blocks_N.add(block)
+
                 blocks_NE |= group.block_north & group.block_east
                 blocks_NW |= group.block_north & group.block_west
                 blocks_N  |= group.block_north - (group.block_east | group.block_west)
+
+
+
 
                 ### assign designated pos for blks, based on group size/pos
                 #if number_of_east_north > 1:
@@ -149,11 +162,16 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        if debug:
                 #            print block, block.pos
                 #        position -= 1
-                
+
+                # sorts blocks, blocks with a high x_pos came first
+                blocks_NE = sorted(blocks_NE, cmp=block_compare_x_high)
+
                 # place NE blocks at right border of group
                 x_pos = group.size_width - 1
                 for blk in blocks_NE:
+
                     blk.pos[0] = x_pos
+
                     x_pos -= 1
 
                 #if number_of_west_north > 1:
@@ -167,32 +185,36 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        if debug:
                 #            print block, block.pos
                 #        position += 1
-                
+
+                # sorts blocks, blocks with a low x_pos came first
+                blocks_NW = sorted(blocks_NW, cmp=block_compare_x_low)
+
                 # place NW blocks at left border of group
                 x_pos = 0
                 for blk in blocks_NW:
+
                     blk.pos[0] = x_pos
+
                     x_pos += 1
 
                 # ok, blocks_N is a copy of group.block_north!
-                # then one block from blocks_N is moved in its position according to the 
+                # then one block from blocks_N is moved in its position according to the
                 # number of blocks in group.block_north - wh00000t!
                 #
-                ### actually leaving it out, changes nothing .... :/ 
-                # in fact it is just a sorted list with key == blk.pos[0] 
-                # and changing the pos[0] to the idx inside the sorted list 
-                for block in blocks_N:
-                    if debug:
-                        print "Group:", group.group_id, " Block_North"
-                        print block, block.pos
-                    block.pos[0] = calculate_border_north_south_position(block, group.block_north)
-                    if debug:
-                        print block, block.pos
-                
+                ### actually leaving it out, changes nothing .... :/
+                # in fact it is just a sorted list with key == blk.pos[0]
+                # and changing the pos[0] to the idx inside the sorted list
+
+
+
+                calculate_border_north_south_position(group, blocks_N, blocks_NE, blocks_NW)
+
+
+
                 # sorting by x-pos, replace x-pos with index in sorted-list
                 #for i, blk in enumerate(sorted(blocks_N, key=lambda b:b.pos[0])):
                 #    blk.pos[0] = i
-                
+
                 ############################################
 
                 #SOUTH
@@ -220,12 +242,15 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        if debug:
                 #            print block, block.pos
                 #        position -= 1
-                
+
+                # sorts blocks, blocks with a high x_pos came first
+                blocks_SE = sorted(blocks_SE, cmp=block_compare_x_high)
+
                 x_pos = group.size_width - 1
                 for blk in blocks_SE:
                     blk.pos[0] = x_pos
                     x_pos -= 1
-                
+
                 #### see above..
                 #if number_of_west_south > 1:
                 #    position = 0
@@ -237,51 +262,57 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        if debug:
                 #            print block, block.pos
                 #        position += 1
+
+                # sorts blocks, blocks with a low x_pos came first
+                blocks_SW = sorted(blocks_SW, cmp=block_compare_x_low)
+
                 x_pos = 0
                 for blk in blocks_SW:
                     blk.pos[0] = x_pos
                     x_pos += 1
 
-                #### see above, keeping it first, later replace with sort-based implemenation
-                for block in blocks_S:
-                    if debug:
-                        print "Group:", group.group_id, " Block_South"
-                        print block, block.pos
-                    block.pos[0] = calculate_border_north_south_position(block, group.block_south)
-                    if debug:
-                        print block, block.pos
-                # sorting by x-pos, replace x-pos with index in sorted-list
-                #for i, blk in enumerate(sorted(blocks_S, key=lambda b:b.pos[0])):
-                #    blk.pos[0] = i
+                calculate_border_north_south_position(group, blocks_S, blocks_SE, blocks_SW)
 
 
-                ############ these both also just sort by y-pos and 
-                ############ assign their position inside the sorted list to the y-pos 
+
+                ############ these both also just sort by y-pos and
+                ############ assign their position inside the sorted list to the y-pos
                 #EAST
-                for block in group.block_east:
-                    if debug:
-                        print "Group:", group.group_id, " Block_East"
-                    if block not in group.block_north and block not in group.block_south:
-                        if debug:
-                            print block, block.pos
-                        block.pos[1] = calculate_border_east_west_position(block, group.block_east)
-                        if debug:
-                            print block, block.pos
+                blocks_E  |= group.block_east - (group.block_north | group.block_south)
+                calculate_border_east_west_position(group, blocks_E, blocks_NE, blocks_SE)
+
+
+
+
+                #for block in group.block_east:
+                    #if debug:
+                        #print "Group:", group.group_id, " Block_East"
+                    #if block not in group.block_north and block not in group.block_south:
+                        #if debug:
+                            #print block, block.pos
+                        #block.pos[1] = calculate_border_east_west_position(block, group.block_east)
+                        #if debug:
+                            #print block, block.pos
                 # sorting by y-pos, replace y-pos with index in sorted-list
                 #for i, blk in enumerate(sorted(blocks_W, key=lambda b:b.pos[1])):
                 #    blk.pos[1] = i
 
 
                 #WEST
-                for block in group.block_west:
-                    if debug:
-                        print "Group:", group.group_id, " Block_West"
-                    if block not in group.block_north and block not in group.block_south:
-                        if debug:
-                            print block, block.pos
-                        block.pos[1] = calculate_border_east_west_position(block, group.block_west)
-                        if debug:
-                            print block, block.pos
+                blocks_N  |= group.block_west - (group.block_north | group.block_south)
+                calculate_border_east_west_position(group, blocks_W, blocks_NW, blocks_SW)
+
+
+
+                #for block in group.block_west:
+                    #if debug:
+                        #print "Group:", group.group_id, " Block_West"
+                    #if block not in group.block_north and block not in group.block_south:
+                        #if debug:
+                            #print block, block.pos
+                        #block.pos[1] = calculate_border_east_west_position(block, group.block_west)
+                        #if debug:
+                            #print block, block.pos
                 # sorting by y-pos, replace y-pos with index in sorted-list
                 #for i, blk in enumerate(sorted(blocks_W, key=lambda b:b.pos[1])):
                 #    blk.pos[1] = i
@@ -339,29 +370,162 @@ def calculate_zft_position(forceOptimizer, debug):
         '''
         turn += 1
 
+
+
 #### obsolete once the sorting based y-pos assignment is active
-def calculate_border_east_west_position(block,neighbors):
-    top = 0
-    for neighbor in neighbors:
-        if neighbor.pos[1] < block.pos[1]:
-            top = top + 1
-    return top
+def calculate_border_east_west_position(group, blocks, blocks_N, blocks_S):
+
+    col = list(repeat(0,group.size_height))
+
+    corner_S = 0
+    if len(blocks_S):
+        corner_S = 1
+        col[group.size_height - 1] = 1
+
+    corner_N = 0
+    if len(blocks_N):
+        corner_N = 1
+        col[0] = 1
+
+    # sorts blocks, blocks with a low y_pos came first
+    blocks = sorted(blocks, cmp=block_compare_y_low)
+
+    for block in blocks:
+
+        block.pos[1] = int(block.pos[1])
+
+        calculate_border_position(block, corner_N, group.size_height - 1 - corner_S, col, 1)
+
+        col[block.pos[1]] = 1
+
+
+
+
+    # Wrong Startposition, because their could be blocks in the NW corner
+    # This way don't respect the calculated values of the force step
+    # top = 0
+    # for neighbor in neighbors:
+        # if neighbor.pos[1] < block.pos[1]:
+            # top = top + 1
+    # return top
+
 #### obsolete once the sorting based x-pos assignment is active
-def calculate_border_north_south_position(block,neighbors):
-    left = 0
-    for neighbor in neighbors:
-        if neighbor.pos[0] < block.pos[0]:
-            left = left + 1
-    return left
+def calculate_border_north_south_position(group, blocks, blocks_E, blocks_W):
+
+    # list show which position is free or not
+    row = list(repeat(0,group.size_width))
+
+    for bl in blocks_E:
+        row[bl.pos[0]] = 1
+
+    for bl in blocks_W:
+        row[bl.pos[0]] = 1
 
 
-#### oooooh ok this is never used, nice... taking it out... 
+    # sorts blocks, blocks with a low x_pos came first
+    blocks = sorted(blocks, cmp=block_compare_x_low)
+
+    for block in blocks:
+
+
+        block.pos[0] = int((block.pos[0]))
+
+        calculate_border_position(block, len(blocks_W), group.size_width - 1 - len(blocks_E), row, 0)
+
+        row[block.pos[0]] = 1
+
+
+
+    # Wrong Startposition, because their could be blocks in the NW corner
+    # This way don't respect the calculated values of the force step
+    # left = 0
+    # for neighbor in neighbors:
+        # if neighbor.pos[0] < block.pos[0]:
+            # left = left + 1
+    # return left
+
+def calculate_border_position(block, min_position, max_position, row, coordinate):
+    # check block position lay in east corner area
+    if block.pos[coordinate] > max_position:
+        block.pos[coordinate] = max_position
+        search = True
+        # search next free position left of the east corner
+        while(search):
+            if row[block.pos[coordinate]]:
+                block.pos[coordinate] -= 1
+            else:
+                search = False
+
+    # check block position lay in west corner area
+    if block.pos[coordinate] < min_position:
+        block.pos[coordinate] = min_position
+        search = True
+        # search next free position right of the west corner
+        while(search):
+            if row[block.pos[coordinate]]:
+                block.pos[coordinate] += 1
+            else:
+                search = False
+
+    # if position ist not free, start searching in the neighborhood
+    if row[block.pos[coordinate]]:
+        search = True
+        range_index = 1
+        direction_index = 1
+
+        while(search):
+            new_pos = block.pos[coordinate] + range_index * direction_index
+
+            if new_pos  <= max_position and new_pos >= min_position and not row[new_pos]:
+                search = False
+                block.pos[coordinate] = new_pos
+
+            else:
+                if direction_index == 1:
+                    direction_index = -1
+                else:
+                    direction_index = 1
+                    range_index += 1
+
+
+def block_compare_x_low(block1, block2):
+    if block1.pos[0] - block2.pos[0] < 0:
+        return -1
+    elif block1.pos[0] - block2.pos[0] > 0:
+        return 1
+    else:
+        return 0
+
+def block_compare_x_high(block1, block2 ):
+    if block2.pos[0] - block1.pos[0] < 0:
+        return -1
+    elif block2.pos[0] - block1.pos[0] > 0:
+        return 1
+    else:
+        return 0
+
+def block_compare_y_low(block1, block2):
+    if block1.pos[1] - block2.pos[1] < 0:
+        return -1
+    elif block1.pos[1] - block2.pos[1] > 0:
+        return 1
+    else:
+        return 0
+
+def block_compare_y_high(block1, block2 ):
+    if block2.pos[1] - block1.pos[1] < 0:
+        return -1
+    elif block2.pos[1] - block1.pos[1] > 0:
+        return 1
+    else:
+        return 0
+#### oooooh ok this is never used, nice... taking it out...
 #### makes sense now why this makes no sense!
 ####
 #### missleading naming .... group always a block! =?!?!= TODO
 #def sum_calculate_north_south_group(group, debug):
-#    
-#    # overall neighbor count , why not sum( len(x) for x in group.neighbors )? 
+#
+#    # overall neighbor count , why not sum( len(x) for x in group.neighbors )?
 #    # is group.neighbors != group.neighbor_{south|north|east|west} together ?!
 #    count_neighbors = len(group.neighbor_north) + len(group.neighbor_south) + len(group.neighbor_east) + len(group.neighbor_west)+ len(group.neighbor_unsorted)
 #
@@ -374,10 +538,10 @@ def calculate_border_north_south_position(block,neighbors):
 #        for neighbor in group.neighbors:
 #            # ah group.neighbors[x] is the weight for neighbor, ugly/missleading var-naming TODO
 #            group_x += len(group.neighbors[neighbor]) * (neighbor.position_x)
-#    
+#
 #        # divisor scales with number of neighbors ?
 #        div = count_neighbors
-#    
+#
 #        # over all neighbors ?
 #        for neighbor in group.neighbors:
 #            if debug:
@@ -412,7 +576,7 @@ def calculate_border_north_south_position(block,neighbors):
 #
 #        for neighbor in group.neighbors:
 #            group_y += len(group.neighbors[neighbor]) * (neighbor.position_y )
-#        
+#
 #        div = count_neighbors
 #
 #        for neighbor in group.neighbors:
@@ -482,23 +646,22 @@ def sum_calculate_free(block, neighbors, group):
     if len(neighbors) > 1:
 
         for neighbor in neighbors:
-            if block.name == "m7":
-                print "m7 Neighbor:", neighbor.name, " pos:",neighbor.pos
+
             #weight = neighbors[neighbor]
             weight = 1
             if neighbor in group.block_east or neighbor in group.block_west or neighbor in group.block_south or neighbor in group.block_north:
                 weight = weight*1
             if neighbor is not block:
                 if neighbor.pos[0] < block.pos[0]:
-                    x += weight * (neighbor.pos[0] + 1)
+                    x += weight * neighbor.pos[0] #+ 1)
                 else:
-                    x += weight * (neighbor.pos[0] - 1)
+                    x += weight * neighbor.pos[0] #- 1)
                 if neighbor.pos[1] < block.pos[1]:
-                    y += weight * (neighbor.pos[1] - 1)
+                    y += weight * neighbor.pos[1] #- 1)
                 else:
-                    y += weight * (neighbor.pos[1] + 1)
+                    y += weight * neighbor.pos[1] #+ 1)
 
-            div += weight
+                div += weight
 
         x /= div
         y /= div
@@ -537,31 +700,31 @@ def sum_calculate_north_south(block, neighbors, group):
     '''
     x = 0.0
     div = 0
-    
+    weight = 1
     # why > 1 and not > 0 ? changing it to 0 seems to make no difference.... TODO
     if len(neighbors) > 1:
         # neighbors is a dict() <block> -> number ?! most values are 1 ?
         # is neighbors a weight map ??? extremly missleading var-name! but yes looks like WEIGHT!!!
         for neighbor in neighbors:
             if neighbor is not block:
-                # for each neighbor left of this block add 
-                
+                # for each neighbor left of this block add
+
                 if neighbor.pos[0] < block.pos[0]:
                     # multiply number associated to block with the neighbors x-pos +1
-                    x += neighbors[neighbor] * (neighbor.pos[0] + 1)
+                    x += weight * (neighbor.pos[0] + 1)
                 else:
                     # multiply number associated to block with the neighbors x-pos -1
-                    x += neighbors[neighbor] * (neighbor.pos[0] - 1)
-                
+                    x += weight * (neighbor.pos[0] - 1)
+
                 ###
                 ### not add/sub 1 in this lines before seems to change nothing!?
                 ### why are they there?
                 ### the following makes no qualitative difference:
                 #x += neighbors[neighbor] * neighbor.pos[0]
 
-            # add weight to divisor
-            div += neighbors[neighbor]
-        
+                # add weight to divisor
+                div += weight
+
         # calculating the averge of all x-pos summarized ?
         x /= div
     else:
@@ -587,18 +750,18 @@ def sum_calculate_east_west(block, neighbors, group):
 
     y = 0.0
     div = 0
-
+    weight = 1
     if len(neighbors) > 1:
 
         for neighbor in neighbors:
 
             if neighbor is not block:
                 if neighbor.pos[1] < block.pos[1]:
-                    y += neighbors[neighbor] * (neighbor.pos[1] - 1)
+                    y += weight * (neighbor.pos[1] - 1)
                 else:
-                    y += neighbors[neighbor] * (neighbor.pos[1] + 1)
+                    y += weight * (neighbor.pos[1] + 1)
 
-            div += neighbors[neighbor]
+                div += weight
 
         y /= div
 

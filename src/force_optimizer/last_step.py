@@ -114,8 +114,6 @@ def start (forceOptimizer, debug=False):
             if new_x > len(columns):
                 new_x = len(columns)-1
 
-
-            no_position = True
             max_position = 0
             if group.size_width > 2:
                 max_position = freeField_width-2
@@ -131,67 +129,58 @@ def start (forceOptimizer, debug=False):
                 columns[new_x] += 1
                 block.pos[0] = new_x
 
-            elif columns[new_x-1] < freeField_height and new_x-1 > 0:
+            elif new_x-1 > 0 and columns[new_x-1] < freeField_height:
                 columns[new_x-1] += 1
                 block.pos[0] = new_x-1
 
-            elif columns[new_x+1] < freeField_height and new_x+1 < max_position:
+            elif new_x+1 < max_position and columns[new_x+1] < freeField_height:
                 columns[new_x+1] += 1
                 block.pos[0] = new_x+1
 
             block_pos = []
             for neighbor in group.blocks:
-                block_pos.append(block.pos)
+                if neighbor is not block:
+                    block_pos.append(neighbor.pos)
+            j = -1
+            i = -1
+            c = 0
+            r = 0
 
-            while(no_position):
-                no_position = False
-                catch = False
-                for neighbor in group.blocks:
-                    if neighbor is not block:
-                        if block.pos == neighbor.pos:
-                            if debug:
-                                print "double position:",block.name, ", ", neighbor.name, " Pos:",block.pos
-                            no_position = True
-                            j = -1
-                            i = -1
-                            c = 0
-                            r = 0
-                            for row in rows:
+            while(block.pos in block_pos):
+                if debug:
+                    print "double position:",block.name, " Pos:",block.pos
 
-                                for column in columns:
+                new_pos = [block.pos[0], block.pos[1]]
+                pos_x = block.pos[0] + c * i
+                pos_y = block.pos[1] + r * j
 
-                                    new_pos = [block.pos[0], block.pos[1]]
-                                    pos_x = block.pos[0] + c * i
-                                    pos_y = block.pos[1] + r * j
+                if pos_x < 0 :
+                    pos_x = 0
+                if pos_x >= group.size_width:
+                    pos_x = group.size_width - 1
+                new_pos[0] = pos_x
 
-                                    if pos_x < 0 :
-                                        pos_x = 0
-                                    if pos_x >= group.size_width:
-                                        pos_x = group.size_width - 1
-                                    new_pos[0] = pos_x
+                if pos_y < 0 :
+                    pos_y = 0
+                if pos_y >= group.size_height:
+                    pos_y = group.size_height - 1
+                new_pos[1] = pos_y
 
-                                    if pos_y < 0 :
-                                        pos_y = 0
-                                    if pos_y >= group.size_height:
-                                        pos_y = group.size_height - 1
-                                    new_pos[1] = pos_y
-                                    if debug:
-                                        print "New Pos:", new_pos
+                if debug:
+                    print "New Pos:", new_pos
 
-                                    if j > 0:
-                                        c += 1
-                                    j *= -1
-                                    if new_pos not in block_pos:
-                                        block.pos = new_pos
-                                        block_pos.append(block.pos)
-                                        catch = True
-                                    if catch :
-                                        break
-                                if catch:
-                                    break
-                                if i > 0:
-                                    r += 1
-                                i *= -1
+                if j > 0:
+                    c += 1
+                j *= -1
+
+                if i > 0:
+                    r += 1
+                i *= -1
+
+                if new_pos not in block_pos:
+                    block.pos = new_pos
+
+
 
             if debug:
                 print "Block:", block.name, " x:",block.pos[0]

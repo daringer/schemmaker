@@ -151,8 +151,8 @@ def find_blocks(group, neighbor, orientation):
         for n_block in neighbor.blocks:
             for pin in block.pins.values():
                 for n_pin in n_block.pins.values():
-
-                    if pin.net not in ['vdd', 'gnd', 'vss', 'out1', 'out2'] and pin.net == n_pin.net:
+                    # pin out is ok
+                    if pin.net not in ['vdd', 'gnd', 'vss'] and pin.net == n_pin.net:
                         if orientation == 1:
                             # Neighbor is NORTH
                             group.block_north.add(block);
@@ -623,7 +623,13 @@ def add_neighbor_north_south( group_north, group_south):
                 child.connected_parent_south = child_neighbor.connected_parent_south + 1
                 child_neighbor.connected_parent_north = child_neighbor.connected_parent_north + 1
 
-
+    for block_north in group_north.blocks:
+        for block_south in group_south.blocks:
+            for pin_north in block_north.pins.values():
+                for pin_south in block_south.pins.values():
+                    if pin_north.net not in ['vdd', 'gnd', 'vss'] and pin_north.net == pin_south.net:
+                         group_north.block_south.add(block_north)
+                         group_south.block_north.add(block_south)
 
 def add_neighbor_east_west( group_east, group_west):
     '''
@@ -641,3 +647,11 @@ def add_neighbor_east_west( group_east, group_west):
             if child_neighbor.parent is group_west:
                 child.connected_parent_west = child_neighbor.connected_parent_west + 1
                 child_neighbor.connected_parent_east = child_neighbor.connected_parent_east + 1
+
+    for block_east in group_east.blocks:
+        for block_west in group_west.blocks:
+            for pin_east in block_east.pins.values():
+                for pin_west in block_west.pins.values():
+                    if pin_east.net not in ['vdd', 'gnd', 'vss'] and pin_east.net == pin_west.net:
+                         group_east.block_west.add(block_east)
+                         group_west.block_east.add(block_west)

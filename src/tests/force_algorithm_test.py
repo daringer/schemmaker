@@ -38,7 +38,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
     def construct_field(self, name="test_circ", x=40, y=40):
         self.field = Field("test_circ", x, y)
- 
+
     def _full_simple(self, fn):
         field = self.construct_field()
         blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
@@ -83,16 +83,16 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     ##
     ## tests start here!
     ##
-    def test_create_groups(self):
-        fn = "circuit_bi1_0op324_2.vhdl"
-        print "-> create groups - fn: {}".format(fn)
-        field = self.construct_field()
-        blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
-        f = self.construct_force_algo_obj(field, blocks, self.pins)
-        f.run(DEBUG)
+    #def test_create_groups(self):
+        #fn = "circuit_bi1_0op324_2.vhdl"
+        #print "-> create groups - fn: {}".format(fn)
+        #field = self.construct_field()
+        #blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
+        #f = self.construct_force_algo_obj(field, blocks, self.pins)
+        #f.run(DEBUG)
 
-        # Check if the main group containts only the two subgroups 0 and 1
-        self.assertEqual(len(f.group_main.childs), 2)
+        ## Check if the main group containts only the two subgroups 0 and 1
+        #self.assertEqual(len(f.group_main.childs), 2)
 
     def test_check_neighbors(self):
         fn = "circuit_bi1_0op324_2.vhdl"
@@ -108,8 +108,8 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def test_full_circ1(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
 
-    def test_full_circ2(self):
-        self._full_simple("circuit_bi1_0op330_3.vhdl")
+    #def test_full_circ2(self):
+        #self._full_simple("circuit_bi1_0op330_3.vhdl")
 
     #def test_full_circ3(self):
     #    self._full_simple("circuit_bi1_0op324_0.vhdl")
