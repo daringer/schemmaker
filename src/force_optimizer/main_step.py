@@ -40,7 +40,7 @@ def search_neighbors(block, forceOptimizer):
 
 def calculate_zft_position(forceOptimizer, debug):
     turn = 0
-    while (turn != 18):
+    while (turn != 19):
 
         if debug:
             print "TURN:", turn
@@ -75,15 +75,15 @@ def calculate_zft_position(forceOptimizer, debug):
                 if (block in group.block_north or block in group.block_south) and (block not in group.block_east and block not in group.block_west):
                         if debug:
                             print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        # block.pos = sum_calculate_north_south(block, neighbors, group)
-                        new_block_pos[block] = sum_calculate_north_south(block, neighbors, group)
+                        #block.pos = sum_calculate_north_south(block, neighbors, group, forceOptimizer)
+                        new_block_pos[block] = sum_calculate_north_south(block, neighbors, group, forceOptimizer)
                         if debug:
                             print "N/S Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
                 if (block in group.block_east or block in group.block_west) and (block not in group.block_north and block not in group.block_south):
                         if debug:
                             print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        # block.pos = sum_calculate_east_west(block, neighbors, group)
-                        new_block_pos[block] = sum_calculate_east_west(block, neighbors, group)
+                        #block.pos = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
+                        new_block_pos[block] = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
                         if debug:
                             print "E/W Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
             for key in new_block_pos:
@@ -694,7 +694,7 @@ def sum_calculate_free(block, neighbors, group):
     return [x, y]
 
 
-def sum_calculate_north_south(block, neighbors, group):
+def sum_calculate_north_south(block, neighbors, group, forceOptimizer):
     '''
     weight = #same nets
     '''
@@ -705,16 +705,30 @@ def sum_calculate_north_south(block, neighbors, group):
     if len(neighbors) > 1:
         # neighbors is a dict() <block> -> number ?! most values are 1 ?
         # is neighbors a weight map ??? extremly missleading var-name! but yes looks like WEIGHT!!!
+
         for neighbor in neighbors:
+
             if neighbor is not block:
                 # for each neighbor left of this block add
 
-                if neighbor.pos[0] < block.pos[0]:
+                #if neighbor is not in the same group, calculate the position of the neighbor
+                pos = ()
+                if neighbor.groups != block.groups:
+                    pos = get_neighbor_pos(block,neighbor, forceOptimizer)
+                else:
+                    pos = neighbor.pos
+
+                # neighbor on the same border gets smaller weight
+                # else it is to strong and both blocks could flip each turn
+                if(neighbor.pos[1] == block.pos[1]):
+                    weight = 1
+
+                if pos[0] < block.pos[0]:
                     # multiply number associated to block with the neighbors x-pos +1
-                    x += weight * (neighbor.pos[0] + 1)
+                    x += weight * (pos[0] + 1)
                 else:
                     # multiply number associated to block with the neighbors x-pos -1
-                    x += weight * (neighbor.pos[0] - 1)
+                    x += weight * (pos[0] - 1)
 
                 ###
                 ### not add/sub 1 in this lines before seems to change nothing!?
@@ -742,8 +756,37 @@ def sum_calculate_north_south(block, neighbors, group):
 
     return [x, block.pos[1]]
 
+
+def get_neighbor_pos(block,neighbor, forceOptimizer):
+    block_group = search_group(block.groups, forceOptimizer)
+    neighbor_group = search_group(neighbor.groups, forceOptimizer)
+    neighbor_pos = neighbor.pos
+    block_pos = block.pos
+
+    while(block_group != neighbor_group):
+
+       block_pos = (block_pos[0] + block_group.position_x, block_pos[1] + block_group.position_y)
+       neighbor_pos = (neighbor_pos[0] + neighbor_group.position_x, neighbor_pos[1] + neighbor_group.position_y)
+
+       neighbor_group = neighbor_group.parent
+       block_group = block_group.parent
+
+    x_position = 0
+    y_position = 0
+    if block_pos[0] < neighbor_pos[0]:
+        x_position = block.pos[0] + (neighbor_pos[0] - block_pos[0])
+    else:
+        x_position = block.pos[0] - (block_pos[0] - neighbor_pos[0])
+
+    if block_pos[1] < neighbor_pos[1]:
+        y_position = block.pos[1] + (neighbor_pos[1] - block_pos[1])
+    else:
+        y_position = block.pos[1] - (block_pos[1] - neighbor_pos[1])
+
+    return [x_position, y_position]
+
 # same questions as for the function before
-def sum_calculate_east_west(block, neighbors, group):
+def sum_calculate_east_west(block, neighbors, group, forceOptimizer):
     '''
     weight =
     '''
@@ -756,10 +799,22 @@ def sum_calculate_east_west(block, neighbors, group):
         for neighbor in neighbors:
 
             if neighbor is not block:
-                if neighbor.pos[1] < block.pos[1]:
-                    y += weight * (neighbor.pos[1] - 1)
+
+                pos = ()
+                if neighbor.groups != block.groups:
+                    pos = get_neighbor_pos(block,neighbor, forceOptimizer)
                 else:
-                    y += weight * (neighbor.pos[1] + 1)
+                    pos = neighbor.pos
+
+                # neighbor on the same border gets smaller weight
+                # else it is to strong and both blocks could flip each turn
+                if(neighbor.pos[0] == block.pos[0]):
+                    weight = 0.1
+
+                if pos[1] < block.pos[1]:
+                    y += weight * (pos[1] - 1)
+                else:
+                    y += weight * (pos[1] + 1)
 
                 div += weight
 
