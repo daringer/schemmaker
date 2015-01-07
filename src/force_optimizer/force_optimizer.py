@@ -141,8 +141,8 @@ class ForceAlgorithm(BaseOptimizer):
             for g in self.groups:
                 if next_grp == g.parent.group_id[0]:
                     grp2pos[g] = (
-                        g.position_x * g.size_width + g.parent.position_x * blksize,
-                        g.position_y * g.size_height + g.parent.position_y * blksize,
+                        (g.position_x + g.parent.position_x) * blksize,
+                        (g.position_y + g.parent.position_y) * blksize,
                         g.size_width * blksize,
                         g.size_height * blksize
                     )

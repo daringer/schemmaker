@@ -462,10 +462,14 @@ def calculate_groups_position(forceOptimizer, debug):
         print ""
 
     for group in forceOptimizer.groups:
-        if debug:
-            print "Group:", group.group_id
+        #if debug:
+        print "Group:", group.group_id
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
+   
+    print "#########"
+    print [x.group_id for x in forceOptimizer.groups]
+    
 
     for group in forceOptimizer.groups:
         group.position_x = -1

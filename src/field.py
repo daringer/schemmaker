@@ -123,9 +123,9 @@ class DebugField(object):
                  -> tuple, list : sort fields in given order 
                  -> string : sort only based on this field
         """
-        pad = 9
+        pad = 15
         tmpl = "{:<{pad}}"
-        print (tmpl*5).format("name", "type", "grps", "pos", "nets", pad=pad)
+        print (tmpl*5).format("name", "type", "grps", "grp-pos", "pos", "nets", pad=pad)
         objs = self.block2xy.items()
 
         if sortkey is not None:
@@ -134,9 +134,14 @@ class DebugField(object):
 
             objs.sort( key=lambda o: tuple(getattr(o[0], skey) for skey in sortkey) )
 
+        grpid2pos = {}
+        for grp, data in sorted(self.grp2pos.items(), key=lambda x: x[1][0]):
+            grpid2pos[tuple(grp.group_id)] = data
+
         for blk, (x, y) in objs:
-            print (tmpl*5).format(
-                    blk.name, blk.type, blk.groups, blk.pos, blk.pins.values(), pad=pad)
+            print (tmpl*6).format(
+                    blk.name, blk.type, blk.groups, grpid2pos[tuple(blk.groups)], blk.pos, blk.pins.values(), pad=pad)
+
 
     def has_overlapping_blocks(self):
         # haha just brute-force this ! ;(
