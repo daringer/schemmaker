@@ -96,6 +96,8 @@ class DebugField(object):
 
         self.block2xy = {}
 
+        self.grp2pos = {}
+
         # fake container
         self.wire_dots = []
         self.input_dots = []
@@ -156,8 +158,9 @@ class DebugField(object):
         for blk, (x, y) in self.block2xy.items():
             out.add_block(blk, (x, y))
 
-        return out
+        out.grp2pos = self.grp2pos
 
+        return out
 
 class Field(object):
     def __init__(self, cid, nx, ny):
@@ -177,6 +180,9 @@ class Field(object):
         self.yx2block = {}
         # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
+        self.grp2pos = {}
+    
+
         # wiring related datastructures
         self.clear_wires() 
 

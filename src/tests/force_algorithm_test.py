@@ -32,7 +32,6 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
             self.blocks.append(b)
 
-
     def construct_force_algo_obj(self, field, blocks, pins):
         return ForceAlgorithm(field, blocks, *pins)
 
@@ -108,8 +107,8 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def test_full_circ1(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
 
-    #def test_full_circ2(self):
-        #self._full_simple("circuit_bi1_0op330_3.vhdl")
+    def test_full_circ2(self):
+        self._full_simple("circuit_bi1_0op330_3.vhdl")
 
     #def test_full_circ3(self):
     #    self._full_simple("circuit_bi1_0op324_0.vhdl")
