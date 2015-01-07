@@ -95,6 +95,7 @@ class Schematic:
                 canvas.draw_line_simple((x_pos, y_pos), (x_pos, y_pos+y_size))
                 canvas.draw_line_simple((x_pos+x_size, y_pos), (x_pos+x_size, y_pos+y_size))
                 canvas.draw_line_simple((x_pos, y_pos+y_size), (x_pos+x_size, y_pos+y_size))
+                canvas.draw_text((x_pos+0.1, y_pos+0.1), str(grp.group_id), fontsize=8, weight=600)
 
         # drawing dots 
         for dot in field.wire_dots:

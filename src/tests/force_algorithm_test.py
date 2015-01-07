@@ -11,7 +11,7 @@ from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
 from routing import Routing
 
-DEBUG = False
+DEBUG = True
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
@@ -110,8 +110,8 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def test_full_circ2(self):
         self._full_simple("circuit_bi1_0op330_3.vhdl")
 
-    #def test_full_circ3(self):
-    #    self._full_simple("circuit_bi1_0op324_0.vhdl")
+    def test_full_circ3(self):
+        self._full_simple("circuit_bi1_0op336_4.vhdl")
 
 
 
