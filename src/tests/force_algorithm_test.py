@@ -104,14 +104,17 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         ## Check that both subgroups of the main group are neighbor
         #self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
-    #def test_full_circ1(self):
-        #self._full_simple("circuit_bi1_0op324_2.vhdl")
 
     def test_full_circ2(self):
         self._full_simple("circuit_bi1_0op330_3.vhdl")
 
+
     #def test_full_circ3(self):
         #self._full_simple("circuit_bi1_0op336_4.vhdl")
+
+    def test_full_circ3(self):
+        self._full_simple("circuit_bi1_0op324_0.vhdl")
+
 
 
 
