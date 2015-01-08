@@ -720,15 +720,15 @@ def sum_calculate_north_south(block, neighbors, group, forceOptimizer):
 
                 # neighbor on the same border gets smaller weight
                 # else it is to strong and both blocks could flip each turn
-                if(neighbor.pos[1] == block.pos[1]):
-                    weight = 1
+                if(pos[1] == block.pos[1]):
+                    weight = 0.1
 
                 if pos[0] < block.pos[0]:
                     # multiply number associated to block with the neighbors x-pos +1
-                    x += weight * (pos[0] + 1)
+                    x += weight * pos[0] #+ 1)
                 else:
                     # multiply number associated to block with the neighbors x-pos -1
-                    x += weight * (pos[0] - 1)
+                    x += weight * pos[0] #- 1)
 
                 ###
                 ### not add/sub 1 in this lines before seems to change nothing!?

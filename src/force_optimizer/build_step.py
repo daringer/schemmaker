@@ -39,7 +39,7 @@ def create_groups(forceOptimizer, debug=False):
             for p in block.pins.values():
                 pins += " " + p.net
                 print "Block: ", block.name, " Group ID", group_id, "Pins:", pins
- 
+
         group = search_group(group_id,forceOptimizer)  # check if the group allready exists
 
 

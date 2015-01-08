@@ -15,9 +15,7 @@ def start(forceOptimizer, debug=False):
 
     set_block_relation_to_group(forceOptimizer, debug)
 
-    calculate_groups_frame(forceOptimizer, debug)
-
-    calculate_groups_position(forceOptimizer, debug)
+    calculate_groups_frame_position(forceOptimizer, debug)
 
 
 
@@ -368,14 +366,16 @@ def set_block_relation_to_group(forceOptimizer, debug):
         for group in forceOptimizer.groups:
             print group
 
-def calculate_groups_frame(forceOptimizer, debug):
+
+
+def calculate_groups_frame_position(forceOptimizer, debug):
     '''
     '''
     if debug:
         print ""
-        print "====================="
-        print "Calculate Group Frame"
-        print "====================="
+        print "========================================="
+        print " Calculate Group Position and Frame Size"
+        print "========================================="
         print ""
 
     if debug:
@@ -384,69 +384,194 @@ def calculate_groups_frame(forceOptimizer, debug):
 
     forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
 
-    if debug:
-        for group in forceOptimizer.groups:
-            print "SortedGroup:", group.group_id
-
     groups = forceOptimizer.groups[:]
-    groups.append(forceOptimizer.group_main)
+    groups.append( forceOptimizer.group_main)
 
-    #go through every group
+    #print "#########"
+    #print [x.group_id for x in groups]
+
+    #for group in groups:
+        #if len(group.blocks)==0:
+            #group.position_x = 0
+            #group.position_y = 0
+        #if debug:
+            #print "SortedGroup:", group.group_id
+
     for group in groups:
-
+        if debug:
+            print group
         width_south = 0
         width_north = 0
         height_east = 0
         height_west = 0
+        if debug:
+            print "GROUP:", group.group_id
+        if len(group.childs):
 
-        if len(group.blocks) > 0:
+            not_visited = group.childs_east_sorted[:]
+
+            start_child = group.childs_east_sorted[0]
+            group.size_height = start_child.size_height
+            group.size_width = start_child.size_width
+            visit_next = []
+            visited = []
+            while len(not_visited):
+                if debug:
+                    print "    START:",start_child.group_id
+
+                not_visited.remove(start_child)
+
+                for neighbor in start_child.neighbor_south:
+                    if debug:
+                        print "        Neighbor:",neighbor.group_id
+                    if neighbor in not_visited:
+                        if start_child.position_y + start_child.size_width > neighbor.position_y:
+                            neighbor.position_y = start_child.position_y + start_child.size_width
+                        if neighbor not in visit_next and neighbor in not_visited and neighbor not in visited:
+                            visit_next.append(neighbor)
+
+                for neighbor in start_child.neighbor_north:
+                    if debug:
+                        print "        Neighbor:",neighbor.group_id
+                    if neighbor in not_visited:
+                        if start_child.position_y-neighbor.size_height < neighbor.position_y:
+                            neighbor.position_y = start_child.position_y-neighbor.size_height
+                        if neighbor not in visit_next and neighbor in not_visited and neighbor not in visited:
+                            visit_next.append(neighbor)
+
+                for neighbor in start_child.neighbor_west:
+                    if debug:
+                        print "        Neighbor:",neighbor.group_id
+                    if neighbor in not_visited:
+                        if start_child.position_x - neighbor.size_width < neighbor.position_x:
+                            neighbor.position_x = start_child.position_x - neighbor.size_width
+                        if neighbor not in visit_next and neighbor in not_visited and neighbor not in visited:
+                            visit_next.append(neighbor)
+
+                for neighbor in start_child.neighbor_east:
+                    if debug:
+                        print "        Neighbor:",neighbor.group_id
+                    if neighbor in not_visited:
+                        if neighbor not in visit_next and neighbor in not_visited and neighbor not in visited:
+                            visit_next.append(neighbor)
+
+                rebuild_group_size(group, start_child, visited)
+                if debug:
+                    print "        VISITED"
+                    for child in visited:
+                        print "            ", child.group_id, (child.position_x, child.position_y), (child.size_width, child.size_height)
+
+                if debug:
+                    print "        VISIT NEXT"
+                    for child in visit_next:
+                        print "            ", child.group_id, (child.position_x, child.position_y), (child.size_width, child.size_height)
+
+                if len(visit_next):
+                    start_child = visit_next[0]
+                    del visit_next[0]
+
+
+        if len(group.blocks):
+
             width_north += len(group.block_north)
             width_south += len(group.block_south)
             height_west += len(group.block_west)
             height_east += len(group.block_east)
 
-        if len(group.childs) > 0:
-            for child in group.child_east:
-                height_east += child.size_height
-            for child in group.child_west:
-                height_west += child.size_height
-            for child in group.child_north:
-                width_north += child.size_width
-            for child in group.child_south:
-                width_south += child.size_width
+            if debug:
+                print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
 
-        if debug:
-            print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
+            #the bigger width of north and south is the width for the group
+            group.size_width = max({width_north, width_south})
+            group.size_height = max({height_east, height_west})
+            # only for low level groups
+            if len(group.blocks) > 0:
+                group.size_height = group.size_height * 1
 
-        #the bigger width of north and south is the width for the group
-        group.size_width = max({width_north, width_south})
-        group.size_height = max({height_east, height_west})
-        # only for low level groups
-        if len(group.blocks) > 0:
-            group.size_height = group.size_height * 2
-
-        #if the group area is to small to place all blocks without overlapping
-        while (group.size_height * group.size_width) < len(group.blocks):
-            #increment the group width and height by 1
-            #group.size_width = group.size_width + 1
-            group.size_height = group.size_height + 1
-
-        if debug:
-            print group
-
-    if forceOptimizer.group_connected_to_parent_neighbor_set_parent_size:
-        forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
-        groups = forceOptimizer.groups[:]
-        groups.insert(0, forceOptimizer.group_main)
-
-        #go through every group
-        for group in groups:
-            if group.connected_parent_north and group.connected_parent_south:
-                group.size_height = group.parent.size_height
-            if group.connected_parent_east and group.connected_parent_west:
-                group.size_width = group.parent.size_width
+            #if the group area is to small to place all blocks without overlapping
+            while (group.size_height * group.size_width) < len(group.blocks):
+                #increment the group width and height by 1
+                #group.size_width = group.size_width + 1
+                group.size_height = group.size_height + 1
 
 
+
+            if debug:
+                print group
+
+
+    for group in groups:
+
+        if len(group.blocks):
+            for block in group.blocks:
+                block.pos[0] = group.size_width / 2 - 0.5
+                block.pos[1] = group.size_height / 2 -0.5
+
+            for block in group.block_north:
+                block.pos[1] = 0
+
+            for block in group.block_south:
+                block.pos[1] = group.size_height-1
+
+            for block in group.block_east:
+                block.pos[0] = group.size_width-1
+
+            for block in group.block_west:
+                block.pos[0] = 0
+
+
+
+def rebuild_group_size(group, new_child, fixed_childs):
+    width_diff = 0
+    height_diff = 0
+    x_diff = 0
+    y_diff = 0
+    if new_child.position_x < 0:
+        x_diff = abs(new_child.position_x)
+    if new_child.position_y < 0:
+        y_diff = abs(new_child.position_y)
+
+    group.size_height += y_diff
+    group.size_width += x_diff
+
+    if new_child.size_width + new_child.position_x > group.size_width:
+        width_diff = new_child.size_width + new_child.position_x - group.size_width
+    if new_child.size_height + new_child.position_y > group.size_height:
+        height_diff = new_child.size_height + new_child.position_y - group.size_height
+
+    group.size_height += height_diff
+    group.size_width += width_diff
+
+    fixed_childs.append(new_child)
+
+    for child in fixed_childs:
+        child.position_x += x_diff
+        child.position_y += y_diff
+
+    set_childs_position(group,fixed_childs)
+
+
+
+def set_childs_position(group,fixed_childs):
+
+    for child in fixed_childs:
+
+        if child in group.child_north:
+            child.position_y = 0
+            if child in group.child_south:
+                child.size_height = group.size_height
+        elif child in group.child_south:
+            child.position_y = group.size_height - child.size_height
+
+        if child in group.child_west:
+            child.position_x = 0
+            if child in group.child_east:
+                child.size_width = group.size_width
+        elif child in group.child_east:
+            child.position_x = group.size_width - child.size_width
+
+        if len(child.childs):
+            set_childs_position(child, child.childs)
 
 def calculate_groups_position(forceOptimizer, debug):
     '''
@@ -462,18 +587,18 @@ def calculate_groups_position(forceOptimizer, debug):
         print ""
 
     for group in forceOptimizer.groups:
-        #if debug:
-        print "Group:", group.group_id
+        if debug:
+            print "Group:", group.group_id
 
-    forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
-   
+    forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
+
     print "#########"
     print [x.group_id for x in forceOptimizer.groups]
-    
+
 
     for group in forceOptimizer.groups:
-        group.position_x = -1
-        group.position_y = -1
+        group.position_x = 0
+        group.position_y = 0
         if debug:
             print "SortedGroup:", group.group_id
 
@@ -483,26 +608,7 @@ def calculate_groups_position(forceOptimizer, debug):
     #go through every group
     for group in groups:
 
-        for block in group.blocks:
-            if block in group.block_south:
-                block.pos[1] = group.size_height - 1
-            elif block in group.block_north:
-                block.pos[1] = 0
-            else:
-                block.pos[1] = group.size_height / 2
 
-            if block in group.block_east:
-                block.pos[0] = group.size_width - 1
-            elif block in group.block_west:
-                block.pos[0] = 0
-            else:
-                block.pos[0] = group.size_width / 2
-
-            pins = ""
-            for p in block.pins.values():
-                pins += " " + p.net
-            if debug:
-                print "Block:", block.name, " Group:", group.group_id, " X:", block.pos[0], " Y:", block.pos[1], "Pins:", pins
 
         for child in group.childs:
             # children connected to NORTH and SOUTH have position y = 0 and are tall as the group

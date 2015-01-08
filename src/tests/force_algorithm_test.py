@@ -93,25 +93,25 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         ## Check if the main group containts only the two subgroups 0 and 1
         #self.assertEqual(len(f.group_main.childs), 2)
 
-    def test_check_neighbors(self):
-        fn = "circuit_bi1_0op324_2.vhdl"
-        print "-> check neighbors - fn: {}".format(fn)
-        field = self.construct_field()
-        blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
-        f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
-        f.run(DEBUG)
+    #def test_check_neighbors(self):
+        #fn = "circuit_bi1_0op324_2.vhdl"
+        #print "-> check neighbors - fn: {}".format(fn)
+        #field = self.construct_field()
+        #blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
+        #f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
+        #f.run(DEBUG)
 
-        # Check that both subgroups of the main group are neighbor
-        self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
+        ## Check that both subgroups of the main group are neighbor
+        #self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
     #def test_full_circ1(self):
-    #    self._full_simple("circuit_bi1_0op324_2.vhdl")
+        #self._full_simple("circuit_bi1_0op324_2.vhdl")
 
     def test_full_circ2(self):
         self._full_simple("circuit_bi1_0op330_3.vhdl")
 
     #def test_full_circ3(self):
-    #    self._full_simple("circuit_bi1_0op336_4.vhdl")
+        #self._full_simple("circuit_bi1_0op336_4.vhdl")
 
 
 
