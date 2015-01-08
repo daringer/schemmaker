@@ -96,6 +96,8 @@ class DebugField(object):
 
         self.block2xy = {}
 
+        self.grp2pos = {}
+
         # fake container
         self.wire_dots = []
         self.input_dots = []
@@ -121,9 +123,9 @@ class DebugField(object):
                  -> tuple, list : sort fields in given order 
                  -> string : sort only based on this field
         """
-        pad = 9
+        pad = 15
         tmpl = "{:<{pad}}"
-        print (tmpl*5).format("name", "type", "grps", "pos", "nets", pad=pad)
+        print (tmpl*5).format("name", "type", "grps", "grp-pos", "pos", "nets", pad=pad)
         objs = self.block2xy.items()
 
         if sortkey is not None:
@@ -132,9 +134,14 @@ class DebugField(object):
 
             objs.sort( key=lambda o: tuple(getattr(o[0], skey) for skey in sortkey) )
 
+        grpid2pos = {}
+        for grp, data in sorted(self.grp2pos.items(), key=lambda x: x[1][0]):
+            grpid2pos[tuple(grp.group_id)] = data
+
         for blk, (x, y) in objs:
-            print (tmpl*5).format(
-                    blk.name, blk.type, blk.groups, blk.pos, blk.pins.values(), pad=pad)
+            print (tmpl*6).format(
+                    blk.name, blk.type, blk.groups, grpid2pos[tuple(blk.groups)], blk.pos, blk.pins.values(), pad=pad)
+
 
     def has_overlapping_blocks(self):
         # haha just brute-force this ! ;(
@@ -156,8 +163,9 @@ class DebugField(object):
         for blk, (x, y) in self.block2xy.items():
             out.add_block(blk, (x, y))
 
-        return out
+        out.grp2pos = self.grp2pos
 
+        return out
 
 class Field(object):
     def __init__(self, cid, nx, ny):
@@ -177,6 +185,9 @@ class Field(object):
         self.yx2block = {}
         # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
+        self.grp2pos = {}
+    
+
         # wiring related datastructures
         self.clear_wires() 
 

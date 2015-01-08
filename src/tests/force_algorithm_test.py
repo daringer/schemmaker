@@ -11,7 +11,7 @@ from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
 from routing import Routing
 
-DEBUG = False
+DEBUG = True
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
@@ -31,7 +31,6 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         for i, b_data in enumerate(output):
             b = Block(b_data["type"], b_data["conns"], b_data["name"], b_data["groups"])
             self.blocks.append(b)
-
 
     def construct_force_algo_obj(self, field, blocks, pins):
         return ForceAlgorithm(field, blocks, *pins)

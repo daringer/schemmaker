@@ -85,7 +85,18 @@ class Schematic:
             if net_names:
                 for pos, pin in blk.pins.items():
                     canvas.draw_text(pin.blk_pos, pin.net, fontsize=6, weight=200)
-                
+        
+        # draw groups 
+        if field.grp2pos is not None:
+            for grp, (x_pos, y_pos, x_size, y_size) in field.grp2pos.items():
+                x_size -= 0.15
+                y_size -= 0.15
+                canvas.draw_line_simple((x_pos, y_pos), (x_pos+x_size, y_pos))
+                canvas.draw_line_simple((x_pos, y_pos), (x_pos, y_pos+y_size))
+                canvas.draw_line_simple((x_pos+x_size, y_pos), (x_pos+x_size, y_pos+y_size))
+                canvas.draw_line_simple((x_pos, y_pos+y_size), (x_pos+x_size, y_pos+y_size))
+                canvas.draw_text((x_pos+0.1, y_pos+0.1), str(grp.group_id), fontsize=8, weight=600)
+
         # drawing dots 
         for dot in field.wire_dots:
             canvas.filled_dot(dot)

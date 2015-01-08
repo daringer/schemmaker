@@ -112,6 +112,21 @@ class ForceAlgorithm(BaseOptimizer):
                 print block.name, block.pos
 
     def get_debug_field(self):
+        grp2pos = self.get_group_sizes()
+        # actually calc block positions
+        out = DebugField(self.field.nx, self.field.ny)
+        for g in self.groups:
+            grp_x, grp_y, x_size, y_size = grp2pos[g]
+            for b in g.blocks:
+                x = b.pos[0] * b.size[0] + grp_x
+                y = b.pos[1] * b.size[1] + grp_y
+                out.add_block(b.copy(out), x, y)
+
+        out.grp2pos = grp2pos
+
+        return out
+
+    def get_group_sizes(self):
         # HELP ME, UUGLYYY :)))) but works!
         blksize = 2
 
@@ -126,20 +141,13 @@ class ForceAlgorithm(BaseOptimizer):
             for g in self.groups:
                 if next_grp == g.parent.group_id[0]:
                     grp2pos[g] = (
-                        g.position_x * g.size_width + g.parent.position_x * blksize,
-                        g.position_y * g.size_height + g.parent.position_y * blksize
+                        (g.position_x + g.parent.position_x) * blksize,
+                        (g.position_y + g.parent.position_y) * blksize,
+                        g.size_width * blksize,
+                        g.size_height * blksize
                     )
                     next_stack.extend(grp.group_id[0] for grp in g.childs)
-
-        # actually calc block positions
-        out = DebugField(self.field.nx, self.field.ny)
-        for g in self.groups:
-            grp_x, grp_y = grp2pos[g]
-            for b in g.blocks:
-                x = b.pos[0] * b.size[0] + grp_x
-                y = b.pos[1] * b.size[1] + grp_y
-                out.add_block(b.copy(out), x, y)
-        return out
+        return grp2pos
 
     def debug_times(self):
         print "## build_step took {:.3f} sec.".format(self.interval_build_step)
