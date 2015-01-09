@@ -115,7 +115,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         self._full_simple("circuit_bi1_0op336_4.vhdl")
 
     def test_full_circ3(self):
-        self._full_simple("circuit_bi1_0op324_0.vhdl")
+        self._full_simple("circuit_bi1_0op324_2.vhdl")
 
 
 
