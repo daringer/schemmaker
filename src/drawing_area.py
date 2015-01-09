@@ -91,8 +91,7 @@ class DrawingArea:
     
     def dot(self, pos, col, rad, fil):
         """Draw a dot"""
-        x, y = pos
-        dot = plt.Circle((x, y), radius=rad, color=col, fill=fil, linewidth=self.linewidth)
+        dot = plt.Circle(pos, radius=rad, color=col, fill=fil, linewidth=self.linewidth)
         self.ax.add_patch(dot)
 
     def draw_circle(self, root, p, r, w):
@@ -100,9 +99,16 @@ class DrawingArea:
         x,y = root
         p = self.rotate(p, w)
         x0, y0 = x+p[0], y+p[1]
-        circ = plt.Circle((x0, y0), radius=r, color='k', fill=False, linewidth=self.linewidth)
-        self.ax.add_patch(circ)
+        self.ax.add_patch(
+            plt.Circle((x0, y0), radius=r, color='k', fill=False, linewidth=self.linewidth)
+        )
         
+    def draw_box_simple(self, root, width, height, **kwargs):
+        """Draw a rectangle"""
+        self.ax.add_patch(
+                plt.Rectangle(root, width=width, height=height, **kwargs)
+        ) 
+
     def draw_line_simple(self, p1, p2):
         """Draw simple line (without rotation)"""
         root = p1
