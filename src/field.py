@@ -96,6 +96,7 @@ class DebugField(object):
 
         self.block2xy = {}
 
+        # keep group pos and size data 
         self.grp2pos = {}
 
         # fake container
@@ -123,15 +124,16 @@ class DebugField(object):
                  -> tuple, list : sort fields in given order 
                  -> string : sort only based on this field
         """
-        pad = 15
+        pad = 10
         tmpl = "{:<{pad}}"
-        print (tmpl*5).format("name", "type", "grps", "grp-pos", "pos", "nets", pad=pad)
+        headers = ["name", "type", "grp", "grp-pos", "grp-size", "blk-pos", "nets"]
+        print (tmpl*len(headers)).format(*headers, pad=pad)
+
         objs = self.block2xy.items()
 
         if sortkey is not None:
             if not isinstance(sortkey, (tuple, list)):
                 sortkey = [sortkey]
-
             objs.sort( key=lambda o: tuple(getattr(o[0], skey) for skey in sortkey) )
 
         grpid2pos = {}
@@ -139,9 +141,12 @@ class DebugField(object):
             grpid2pos[tuple(grp.group_id)] = data
 
         for blk, (x, y) in objs:
+            g_pos = grpid2pos[tuple(blk.groups)][:2] 
+            g_size = grpid2pos[tuple(blk.groups)][2:]
             print (tmpl*6).format(
-                    blk.name, blk.type, blk.groups, grpid2pos[tuple(blk.groups)], blk.pos, blk.pins.values(), pad=pad)
-
+                    blk.name, blk.type, blk.groups, 
+                    g_pos, g_size, blk.pos, blk.pins.values(), 
+                    pad=pad)
 
     def has_overlapping_blocks(self):
         # haha just brute-force this ! ;(
@@ -167,6 +172,12 @@ class DebugField(object):
 
         return out
 
+    def trim_size(self):
+        max_x = max( (pos[0] + blk.size[0]) for blk, pos in self.block2xy.items() )
+        max_y = max( (pos[1] + blk.size[1]) for blk, pos in self.block2xy.items() )
+        self.nx = max_x
+        self.ny = max_y
+
 class Field(object):
     def __init__(self, cid, nx, ny):
         # circuit id
@@ -183,11 +194,10 @@ class Field(object):
         # position-to-block map (all occupied pos as keys)
         self.xy2block = {}
         self.yx2block = {}
-        # now also done automatically-on-demand TODODODODOD HEEERREEEE
         
+        # keep group pos and size data 
         self.grp2pos = {}
     
-
         # wiring related datastructures
         self.clear_wires() 
 
