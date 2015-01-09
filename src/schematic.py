@@ -89,25 +89,29 @@ class Schematic:
         # draw groups 
         if field.grp2pos is not None:
             txtposes = set()
-            for grp, (x_pos, y_pos, x_size, y_size) in field.grp2pos.items():
+            it = sorted(field.grp2pos.items(), key=lambda o: len(o[0].group_id))
+            for grp, (x_pos, y_pos, x_size, y_size) in it: 
                 lvl = len(grp.group_id)
-                shrink = lvl * 0.25
+                fill = True if lvl == 1 else False
+                color = "0.77" if lvl == 1 else "0.00"
+                shrink = lvl * 0.2
                 gname = "({})".format(":".join( map(str, grp.group_id) ) \
                         if isinstance(grp.group_id, (tuple, list)) \
                         else str(grp.group_id))
-                x_pos += shrink
+                # calc box pos/size
+                x_pos += shrink*0.8
                 y_pos += shrink
-                x_size -= shrink*2
+                x_size -= shrink*2*0.8
                 y_size -= shrink*2
-                txt_pos = (x_pos+0.1, y_pos+0.5) if len(grp.group_id) == 2 else (x_pos+0.1, y_pos-0.4)
-                canvas.draw_line_simple((x_pos, y_pos), (x_pos+x_size, y_pos))
-                canvas.draw_line_simple((x_pos, y_pos), (x_pos, y_pos+y_size))
-                canvas.draw_line_simple((x_pos+x_size, y_pos), (x_pos+x_size, y_pos+y_size))
-                canvas.draw_line_simple((x_pos, y_pos+y_size), (x_pos+x_size, y_pos+y_size))
+                
+                # calc unused text pos
+                txt_pos = (x_pos+0.1, y_pos+0.5) if lvl == 2 else (x_pos+0.1, y_pos-0.2)
                 while txt_pos in txtposes:
                     txt_pos = (txt_pos[0], txt_pos[1]+0.35)
-                canvas.draw_text(txt_pos, gname, fontsize=6, weight=200*lvl**2)
                 txtposes.add(txt_pos)
+
+                canvas.draw_box_simple((x_pos, y_pos), x_size, y_size, fill=fill, color=color, zorder=-100)
+                canvas.draw_text(txt_pos, gname, fontsize=6, weight=200*lvl**2)
 
         # drawing dots 
         for dot in field.wire_dots:
