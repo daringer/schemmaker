@@ -11,7 +11,7 @@ from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
 from routing import Routing
 
-DEBUG = True
+DEBUG = False
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
@@ -62,12 +62,15 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         f.step_last(DEBUG)
         f4 = f.get_debug_field()
         if DEBUG:
+            f4.trim_size()
             fn = draw_field(f4, "schematic_final_{}.pdf".format(cid))
 
         # CHECK IF OVERLAPPING BLOCKS WERE FOUND
         overlap = f4.has_overlapping_blocks()
         if overlap:
             f4.show_blocks(sortkey=("groups", "pos"))
+            f4.trim_size()
+            draw_field(f4, "schematic_final_{}.pdf".format(cid))
         else:
             f = f4.to_field()
             f.optimize_size()
@@ -105,12 +108,11 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         #self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
 
-    def test_full_circ2(self):
+    def test_full_circ1(self):
         self._full_simple("circuit_bi1_0op330_3.vhdl")
 
-
-    #def test_full_circ3(self):
-        #self._full_simple("circuit_bi1_0op336_4.vhdl")
+    def test_full_circ2(self):
+        self._full_simple("circuit_bi1_0op336_4.vhdl")
 
     def test_full_circ3(self):
         self._full_simple("circuit_bi1_0op324_0.vhdl")
