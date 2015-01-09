@@ -88,14 +88,26 @@ class Schematic:
         
         # draw groups 
         if field.grp2pos is not None:
+            txtposes = set()
             for grp, (x_pos, y_pos, x_size, y_size) in field.grp2pos.items():
-                x_size -= 0.15
-                y_size -= 0.15
+                lvl = len(grp.group_id)
+                shrink = lvl * 0.25
+                gname = "({})".format(":".join( map(str, grp.group_id) ) \
+                        if isinstance(grp.group_id, (tuple, list)) \
+                        else str(grp.group_id))
+                x_pos += shrink
+                y_pos += shrink
+                x_size -= shrink*2
+                y_size -= shrink*2
+                txt_pos = (x_pos+0.1, y_pos+0.5) if len(grp.group_id) == 2 else (x_pos+0.1, y_pos-0.4)
                 canvas.draw_line_simple((x_pos, y_pos), (x_pos+x_size, y_pos))
                 canvas.draw_line_simple((x_pos, y_pos), (x_pos, y_pos+y_size))
                 canvas.draw_line_simple((x_pos+x_size, y_pos), (x_pos+x_size, y_pos+y_size))
                 canvas.draw_line_simple((x_pos, y_pos+y_size), (x_pos+x_size, y_pos+y_size))
-                canvas.draw_text((x_pos+0.1, y_pos+0.1), str(grp.group_id), fontsize=8, weight=600)
+                while txt_pos in txtposes:
+                    txt_pos = (txt_pos[0], txt_pos[1]+0.35)
+                canvas.draw_text(txt_pos, gname, fontsize=6, weight=200*lvl**2)
+                txtposes.add(txt_pos)
 
         # drawing dots 
         for dot in field.wire_dots:
