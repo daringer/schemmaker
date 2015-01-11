@@ -6,8 +6,8 @@ import re
 def parse_vhdl(data_path):
 
     if not os.path.exists(data_path):
-        print "FAIL: {} <- not found!".format(data_path)
-        self.assertTrue(False)
+        print "FAIL: {} <- not found - exiting!".format(data_path)
+        sys.exit(1)
 
     block, blocks = (), []
     p = False

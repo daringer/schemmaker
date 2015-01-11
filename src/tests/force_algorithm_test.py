@@ -38,7 +38,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def construct_field(self, name="test_circ", x=40, y=40):
         self.field = Field("test_circ", x, y)
 
-    def _full_simple(self, fn):
+    def _full_simple(self, fn, nocheck=False):
         field = self.construct_field()
         blocks = self.parse_blocks(os.path.join(self.test_data_dir, fn))
         f = self.construct_force_algo_obj(self.field, self.blocks, self.pins)
@@ -79,7 +79,8 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             ret = r.route(4)
             fn = draw_field(f, "schematic_real_{}.pdf".format(cid))
 
-        self.assertFalse(overlap, "Found overlapping blocks!")
+        if not nocheck:
+            self.assertFalse(overlap, "Found overlapping blocks!")
 
 
     ##
@@ -117,6 +118,10 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     def test_full_circ3(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
 
+    def test_all_testdata(self):
+        dn = "../../testdata/new/"
+        for fn in os.listdir(dn):
+            self._full_simple(os.path.join("new", fn), nocheck=True)
 
 
 
