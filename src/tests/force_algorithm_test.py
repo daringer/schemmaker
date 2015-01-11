@@ -72,13 +72,21 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
             f4.trim_size()
             draw_field(f4, "schematic_final_{}.pdf".format(cid))
         else:
-            f = f4.to_field()
-            f.optimize_size()
-            f.optimize_block_dirs()
-            r = Routing(f)
-            ret = r.route(4)
-            fn = draw_field(f, "schematic_real_{}.pdf".format(cid))
-
+            try:
+                f = f4.to_field()
+                f.optimize_size()
+                f.optimize_block_dirs()
+                r = Routing(f)
+                ret = r.route(4)
+                fn = draw_field(f, "schematic_real_{}.pdf".format(cid))
+            except Exception as e:
+                if not nocheck:
+                    print "failed with circuit {}".format(cid)
+                    print "continuing due to 'nocheck' == True"
+                else:
+                    raise e
+                
+            
         if not nocheck:
             self.assertFalse(overlap, "Found overlapping blocks!")
 
@@ -117,6 +125,9 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
 
     def test_full_circ3(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
+
+    def test_full_circ4(self):
+        self._full_simple("new/circuit_bi1_0op944_4.vhdl")
 
     def test_all_testdata(self):
         dn = "../../testdata/new/"
