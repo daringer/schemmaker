@@ -16,6 +16,26 @@ def start(force_algo, debug=False):
         for group in force_algo.groups:
             print group
 
+    for group in force_algo.groups:
+        group.is_bias = is_bias_group(group, force_algo)
+
+def is_bias_group(group, forceOptimizer):
+
+    if len(group.blocks):
+
+        vbias_net = set()
+        for block in group.blocks:
+            for pin in block.pins.values():
+                if pin.net.lower() in forceOptimizer.bias_nets:
+                    vbias_net.add(pin.net.lower())
+
+        if vbias_net == forceOptimizer.bias_nets:
+            return True
+        else:
+            return False
+    else:
+        return False
+
 
 def create_groups(forceOptimizer, debug=False):
     '''
@@ -198,6 +218,8 @@ def find_neighbors(forceOptimizer, debug):
     # go over all collected nets
     for key in forceOptimizer.dictionary_net_blocks.keys():
 
+        if key.lower().startswith("vbias"):
+            forceOptimizer.bias_nets.add(key.lower())
         # get the list with the blocks connected to the net
         block_list = forceOptimizer.dictionary_net_blocks[key]
         if debug:

@@ -28,6 +28,7 @@ def wide_search(forceOptimizer, debug):
         print "Wide Search Queue count:", len(forceOptimizer.wide_search_queue)
     # get the first group of the queue to start a wide search on her over her subgroups
     group = forceOptimizer.wide_search_queue.pop(0)
+
     if debug:
         print "Group ID:", group.group_id, " Count Group Childs: ", len(group.childs)
 
@@ -88,7 +89,7 @@ def wide_search(forceOptimizer, debug):
             visited_child.wide_search_flag = 2
 
         # increment the number of connected to parent north/south/east/west
-        sort_extern_neighbors(group.childs_east_sorted, debug)
+        sort_extern_neighbors(group.childs_east_sorted, debug, forceOptimizer)
 
         # when all children / subgroups are visited
         # then we can start to sort the neighborhood of these childs in the group
@@ -103,11 +104,10 @@ def wide_search(forceOptimizer, debug):
         if len(forceOptimizer.wide_search_queue) > 0:
             wide_search(forceOptimizer, debug)
 
-
-
-def sort_extern_neighbors(east_list, debug):
+def sort_extern_neighbors(east_list, debug, forceOptimizer):
 
     for group in east_list:
+
         if debug:
             print "SORT EXTERN NEIGHBOR for:", str(group.group_id), "Neighbors count:", len(group.neighbor_extern)
             for neigh in group.neighbor_extern:
@@ -147,6 +147,7 @@ def sort_extern_neighbors(east_list, debug):
 
 def find_blocks(group, neighbor, orientation, debug):
     if debug:
+        print ""
         print "Find Blocks connected to extern Block"
         print "Group:", group.group_id, " Neighbor:", neighbor.group_id, " Border:", orientation
 
@@ -157,24 +158,38 @@ def find_blocks(group, neighbor, orientation, debug):
 
                     # pin out is ok
                     if pin.net not in ['vdd', 'gnd', 'vss'] and pin.net == n_pin.net:
+
                         if debug:
                             print block.name, " -> ", pin.net," -> ", n_block.name
+
                         if orientation == 1:
                             # Neighbor is NORTH
-                            group.block_north.add(block);
-                            neighbor.block_south.add(n_block)
+                            if not group.is_bias:
+                                group.block_north.add(block);
+                            if not neighbor.is_bias:
+                                neighbor.block_south.add(n_block)
+
+
                         if orientation == 2:
                             # Neighbor is EAST
-                            group.block_east.add(block);
-                            neighbor.block_west.add(n_block)
+                            if not group.is_bias:
+                                group.block_east.add(block);
+                            if not neighbor.is_bias:
+                                neighbor.block_west.add(n_block)
+
                         if orientation == 3:
                             # Neighbor is SOUTH
-                            neighbor.block_north.add(n_block);
-                            group.block_south.add(block)
+                            if not neighbor.is_bias:
+                                neighbor.block_north.add(n_block);
+                            if not group.is_bias:
+                                group.block_south.add(block)
+
                         if orientation == 4:
                             # Neighbor is WEST
-                            neighbor.block_east.add(n_block);
-                            group.block_west.add(block)
+                            if not neighbor.is_bias:
+                                neighbor.block_east.add(n_block);
+                            if not group.is_bias:
+                                group.block_west.add(block)
 
 def sort_unsorted_neighbor( east_list, debug):
     '''

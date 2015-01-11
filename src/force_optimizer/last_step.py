@@ -39,6 +39,7 @@ def start (forceOptimizer, debug=False):
                 rows[block.pos[1]] += 1
 
         if debug:
+            print ""
             print "rows of group:", group.group_id
             for row in rows:
                 print row
@@ -59,6 +60,7 @@ def start (forceOptimizer, debug=False):
                 columns[block.pos[0]] += 1
 
         if debug:
+            print ""
             print "columns of group:", group.group_id
             print columns
 
@@ -67,8 +69,15 @@ def start (forceOptimizer, debug=False):
                 inner_blocks.append(block)
 
         inner_blocks = sorted(inner_blocks, cmp=block_compare_y)
+        if debug:
+            print ""
 
+        blocks_old_position={}
+
+        # row
         for block in inner_blocks:
+
+            blocks_old_position[block] = [block.pos[0], block.pos[1]]
 
             new_y = int(round(block.pos[1]))
             if debug:
@@ -104,7 +113,10 @@ def start (forceOptimizer, debug=False):
                 print "Block:", block.name, " y:",block.pos[1]
 
         inner_blocks = sorted(inner_blocks, cmp=block_compare_x)
+        if debug:
+            print ""
 
+        #  colum
         for block in inner_blocks:
 
             new_x = int(round(block.pos[0]))
@@ -137,19 +149,84 @@ def start (forceOptimizer, debug=False):
                 columns[new_x+1] += 1
                 block.pos[0] = new_x+1
 
-            block_pos = []
-            for neighbor in group.blocks:
-                if neighbor is not block:
-                    block_pos.append(neighbor.pos)
-            j = -1
-            i = -1
-            c = 0
-            r = 0
+        # search overlappings
+        block_pos = []
+        overlappings = {}
+        for neighbor in group.blocks:
+            if neighbor.pos not in block_pos:
+                block_pos.append(neighbor.pos)
+            for neig in group.blocks:
+                if neig is not neighbor and neig.pos == neighbor.pos:
+                    if neighbor in overlappings.keys():
+                        overlappings[neighbor].append(neig)
+                    else:
+                        overlappings[neighbor] = [neig]
 
-            while(block.pos in block_pos):
+        j = -1
+        i = -1
+        c = 0
+        r = 0
+
+        if debug:
+            print ""
+            print "Overlappings in group:", group.group_id
+
+
+        # find overlapping block
+        for block in overlappings.keys():
+            for neighbor in overlappings[block]:
+
+                if block.pos == neighbor.pos:
+
+                    if debug:
+                        print ""
+                        print "Overlapping between:", block.name, " + ", neighbor.name, " on:", block.pos
+
+                    block_old = blocks_old_position[block]
+                    neighbor_old = blocks_old_position[neighbor]
+
+                    if debug:
+                        print "Old positions Block:", block_old, " Neighbor:", neighbor_old
+
+                    no_y = True
+                    new_pos = []
+
+                    new_pos = [block.pos[0] + 1, block.pos[1]]
+
+                    if new_pos in block_pos:
+                        new_pos = [block.pos[0], block.pos[1]+1]
+
+                        if new_pos not in block_pos:
+
+                            if debug:
+                                print new_pos, " is free!"
+
+                            if block_old[1] < neighbor_old[1]:
+                                neighbor.pos = new_pos
+                                block_pos.append(new_pos)
+
+                            elif block_old[1] > neighbor_old[1]:
+                                block.pos = new_pos
+                                block_pos.append(new_pos)
+
+                    else:
+
+                        if debug:
+                            print new_pos, " is free!"
+
+                        if block_old[0] < neighbor_old[0]:
+                            neighbor.pos = new_pos
+                            block_pos.append(new_pos)
+
+                        elif block_old[0] > neighbor_old[0]:
+                            block.pos = new_pos
+                            block_pos.append(new_pos)
+
                 if debug:
-                    print "double position:",block.name, " Pos:",block.pos
+                    print "Block:", block.name, " new pos:", block.pos
+                    print "Neighbor:", neighbor.name, " new pos:", neighbor.pos
 
+                '''
                 new_pos = [block.pos[0], block.pos[1]]
                 pos_x = block.pos[0] + c * i
                 pos_y = block.pos[1] + r * j
@@ -179,11 +256,10 @@ def start (forceOptimizer, debug=False):
 
                 if new_pos not in block_pos:
                     block.pos = new_pos
+                '''
 
 
 
-            if debug:
-                print "Block:", block.name, " x:",block.pos[0]
 
 def block_compare_y(block_1, block_2):
     '''

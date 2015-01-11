@@ -49,6 +49,8 @@ class ForceAlgorithm(BaseOptimizer):
         self.dictionary_inp_blocks = {}
         self.dictionary_bia_blocks = {}
 
+        self.bias_nets = set()
+
         self.group_east = Group([OUT_GRP])
         self.group_south = Group([GND_GRP])
         self.group_north = Group([VCC_GRP])

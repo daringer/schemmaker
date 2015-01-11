@@ -18,6 +18,8 @@ class Group:
         self.parent = None
         self.childs = []
 
+        self.is_bias = False
+
         #Frame size and origin
         self.size_width = 0
         self.size_height = 0
@@ -109,6 +111,9 @@ class Group:
                 self.position_x, self.position_y, nl, pad=less_padding)
         o += "+------------------------------------------" + nl
 
+        #show is bias
+        if self.is_bias:
+            o += "|{:>{pad}} {}".format("BIAS", nl, pad=padding)
         # show parent
         if self.parent is not None:
             o += "|{:>{pad}}: {}{}".format("Parent", self.parent.group_id, nl, pad=padding)
