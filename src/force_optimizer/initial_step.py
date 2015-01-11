@@ -482,6 +482,9 @@ def calculate_groups_frame_position2(forceOptimizer, debug):
             north_south_childs = set(group.child_north) & set(group.child_south)
 
             north_south_child_update(group, north_south_childs, debug)
+            #new width for children with east + west connection
+            #east_west_childs = set(group.child_east) & set(group.child_west)
+            #east_west_child_update(group, east_west_childs, debug)
 
             # start positioning the childs
 
@@ -547,6 +550,12 @@ def north_south_child_update(group, north_south_childs, debug):
         if len(child.childs):
             calculate_child_position_north_south(child, child.child_north, False, debug)
             calculate_child_position_north_south(child, child.child_south, True, debug)
+
+
+
+def east_west_child_update(group, east_west_childs, debug):
+    for child in east_west_childs:
+        child.size_width = group.size_width
 
 
 

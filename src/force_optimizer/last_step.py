@@ -64,7 +64,10 @@ def start (forceOptimizer, debug=False):
             print "columns of group:", group.group_id
             print columns
 
+        blocks_old_position={}
+
         for block in group.blocks:
+            blocks_old_position[block] = [block.pos[0], block.pos[1]]
             if block not in group.block_north and block not in group.block_south and block not in group.block_east and block not in group.block_west:
                 inner_blocks.append(block)
 
@@ -72,12 +75,12 @@ def start (forceOptimizer, debug=False):
         if debug:
             print ""
 
-        blocks_old_position={}
+
 
         # row
         for block in inner_blocks:
 
-            blocks_old_position[block] = [block.pos[0], block.pos[1]]
+
 
             new_y = int(round(block.pos[1]))
             if debug:
@@ -181,7 +184,7 @@ def start (forceOptimizer, debug=False):
                     if debug:
                         print ""
                         print "Overlapping between:", block.name, " + ", neighbor.name, " on:", block.pos
-
+                        print blocks_old_position
                     block_old = blocks_old_position[block]
                     neighbor_old = blocks_old_position[neighbor]
 
@@ -191,7 +194,10 @@ def start (forceOptimizer, debug=False):
                     no_y = True
                     new_pos = []
 
-                    new_pos = [block.pos[0] + 1, block.pos[1]]
+                    if block.pos[0] + 1 < group.size_width:
+                        new_pos = [block.pos[0] + 1, block.pos[1]]
+                    else:
+                        new_pos = [block.pos[0] - 1, block.pos[1]]
 
                     if new_pos in block_pos:
                         new_pos = [block.pos[0], block.pos[1]+1]
@@ -200,14 +206,17 @@ def start (forceOptimizer, debug=False):
 
                             if debug:
                                 print new_pos, " is free!"
+                            if neighbor not in set(set(group.block_east) | set(group.block_west) | set(group.block_north) | set(group.block_south)):
+                                if block_old[1] < neighbor_old[1]:
+                                    neighbor.pos = new_pos
+                                    block_pos.append(new_pos)
 
-                            if block_old[1] < neighbor_old[1]:
-                                neighbor.pos = new_pos
-                                block_pos.append(new_pos)
-
-                            elif block_old[1] > neighbor_old[1]:
-                                block.pos = new_pos
-                                block_pos.append(new_pos)
+                                elif block_old[1] > neighbor_old[1]:
+                                    block.pos = new_pos
+                                    block_pos.append(new_pos)
+                            else:
+                                    block.pos = new_pos
+                                    block_pos.append(new_pos)
 
                     else:
 
