@@ -25,7 +25,7 @@ class Schematic:
             canvas_backend_cls = FigureCanvasPdf
         self.canvas_backend_cls = canvas_backend_cls
 
-    def plot(self, field, grid=None, net_names=False):
+    def plot(self, field, grid=None, net_names=False, draw_grps=True):
         # initializing drawing area for the schematics
         self.draw_area_obj = canvas = DrawingArea(field, self.canvas_backend_cls)
 
@@ -118,14 +118,13 @@ class Schematic:
             canvas.filled_dot(dot)
             
         # draw vdd and gnd line
-        vss_go, vss_end = (bot_min, ny), (bot_max, ny)
-        vdd_go, vdd_end = (top_min, 0), (top_max, 0)
+        #vss_go, vss_end = (bot_min, ny), (bot_max, ny)
+        #vdd_go, vdd_end = (top_min, 0), (top_max, 0)
 
-        if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
+        #if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
             #canvas.draw_line_simple(vdd_go, vdd_end)
             #canvas.draw_line_simple(vss_go, vss_end)
-            pass
-        
+            #pass
 
         # draw open-input dots 
         for direction, pos, name in field.input_dots:

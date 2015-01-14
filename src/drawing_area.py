@@ -43,7 +43,7 @@ class DrawingArea:
         self.linewidth = 1.5
         
         # draw gnd and vdd
-        self.gnd((field.nx/2. - 1, field.ny), 0)
+        self.gnd((field.nx/2. - 1, field.ny-0.25), 0)
         self.vdd((field.nx/2. - 1, -2.0), 0)  
 
     def _get_device_draw_pos(self, pos, rot):
