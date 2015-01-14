@@ -368,8 +368,10 @@ class Field(object):
         self.block2xy[block] = pos
         self.block2yx[block] = (pos[1], pos[0])
 
-        self.output_nets.update(block.output_nets)
-        self.input_nets.update(block.input_nets)
+        #self.output_nets.update(block.output_nets)
+        #for 
+
+        #self.input_nets.update(block.input_nets)
 
         # calc x: max(x-values) y: (sum of all y) / (num items)
         if len(self.output_nets) > 0:
