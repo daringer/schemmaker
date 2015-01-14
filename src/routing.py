@@ -223,7 +223,7 @@ class Routing:
                         elif block.get_pin_direction(pin) == 2:
                             pos = (pos[0], pos[1]-1)
                         else:
-                            pos = (pos[0]-0, pos[1])
+                            pos = (pos[0]-1, pos[1])
 
 
                     if pos not in pos_map:
