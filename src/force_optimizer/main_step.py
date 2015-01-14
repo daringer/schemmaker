@@ -9,6 +9,8 @@ def start (forceOptimizer, debug=False):
         print "============="
         print ""
 
+        for group in forceOptimizer.groups:
+            print group
     calculate_zft_position(forceOptimizer, debug)
 
 
@@ -89,20 +91,48 @@ def calculate_zft_position(forceOptimizer, debug):
             for block in forceOptimizer.blocks:
                 group = search_group(block.groups, forceOptimizer)
                 neighbors = search_neighbors(block, forceOptimizer)
-                if (block in group.block_north or block in group.block_south) and (block not in group.block_east and block not in group.block_west):
+                if (block in group.block_east and block in group.block_west) and (block in group.block_north and block in group.block_south):
                         if debug:
-                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
-                        #block.pos = sum_calculate_north_south(block, neighbors, group, forceOptimizer)
-                        new_block_pos[block] = sum_calculate_north_south(block, neighbors, group, forceOptimizer,debug)
-                        if debug:
-                            print "N/S Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
-                if (block in group.block_east or block in group.block_west) and (block not in group.block_north and block not in group.block_south):
-                        if debug:
-                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                            print "NSEW Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
                         #block.pos = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
-                        new_block_pos[block] = sum_calculate_east_west(block, neighbors, group, forceOptimizer, debug)
+                        new_block_pos[block] = sum_calculate_free(block, neighbors, group, debug)
                         if debug:
-                            print "E/W Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+                            print "NSEW Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+
+                elif (block in group.block_east and block in group.block_west) and (block not in group.block_north and block not in group.block_south):
+                        if debug:
+                            print "EW Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        #block.pos = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
+                        new_block_pos[block] = sum_calculate_free(block, neighbors, group, debug)
+                        if debug:
+                            print "EW Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+
+                elif (block not in group.block_east and block not in group.block_west) and (block in group.block_north and block in group.block_south):
+                        if debug:
+                            print "NS Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                        #block.pos = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
+                        new_block_pos[block] = sum_calculate_free(block, neighbors, group, debug)
+                        if debug:
+                            print "NS Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+
+                else:
+                    if (block in group.block_north or block in group.block_south): # and (block not in group.block_east and block not in group.block_west):
+                            if debug:
+                                print "N/S Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                            #block.pos = sum_calculate_north_south(block, neighbors, group, forceOptimizer)
+                            new_block_pos[block] = sum_calculate_north_south(block, neighbors, group, forceOptimizer,debug)
+                            if debug:
+                                print "N/S Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+
+                    elif (block in group.block_east or block in group.block_west) and (block not in group.block_north and block not in group.block_south):
+                            if debug:
+                                print "E/W Block: ", block.name, " Group:", block.groups, " X:", block.pos[0], " Y:", block.pos[1]
+                            #block.pos = sum_calculate_east_west(block, neighbors, group, forceOptimizer)
+                            new_block_pos[block] = sum_calculate_east_west(block, neighbors, group, forceOptimizer, debug)
+                            if debug:
+                                print "E/W Block: ", block.name, " Group:", block.groups, " X:", new_block_pos[block][0], " Y:", new_block_pos[block][1]
+
+
             for key in new_block_pos:
                 key.pos = new_block_pos[key]
         # set blocks.pos based on the group the block is assigned to
@@ -126,7 +156,9 @@ def calculate_zft_position(forceOptimizer, debug):
                 blocks_N = set()
                 blocks_E = set()
                 blocks_W = set()
-
+                blocks_NSEW = set()
+                blocks_NS = set()
+                blocks_EW = set()
                 # has no use, checking for a size of a container > 1 before , why?
                 #number_of_east_north = len(group.block_north & group.block_east)
                 #number_of_west_north = len(group.block_north & group.block_west)
@@ -160,6 +192,10 @@ def calculate_zft_position(forceOptimizer, debug):
                 #        blocks_NW.add(block)
                 #    elif block not in group.block_east and block not in group.block_west:
                 #        blocks_N.add(block)
+
+                blocks_NSEW |= group.block_north & group.block_east & group.block_west & group.block_south
+                blocks_NS |= group.block_north & group.block_south - (group.block_west | group.block_south)
+                blocks_EW |= group.block_west & group.block_east - (group.block_north | group.block_south)
 
                 blocks_NE |= group.block_north & group.block_east
                 blocks_NW |= group.block_north & group.block_west
@@ -316,7 +352,7 @@ def calculate_zft_position(forceOptimizer, debug):
 
 
                 #WEST
-                blocks_N  |= group.block_west - (group.block_north | group.block_south)
+                blocks_W  |= group.block_west - (group.block_north | group.block_south)
                 calculate_border_east_west_position(group, blocks_W, blocks_NW, blocks_SW)
 
 

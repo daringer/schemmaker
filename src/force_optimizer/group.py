@@ -19,7 +19,7 @@ class Group:
         self.childs = []
 
         self.is_bias = False
-
+        self.is_bias_connected = False
         #Frame size and origin
         self.size_width = 0
         self.size_height = 0

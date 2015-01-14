@@ -10,6 +10,16 @@ def start(force_algo, debug=False):
         for group in force_algo.groups:
             print group
 
+    find_special_groups(force_algo, debug)
+
+    force_algo.groups = sorted(force_algo.groups, cmp=group_compare)
+
+    find_special_pins(force_algo, debug)
+
+    if debug:
+        for group in force_algo.groups:
+            print group
+
     find_neighbors(force_algo, debug)
 
     if debug:
@@ -18,6 +28,44 @@ def start(force_algo, debug=False):
 
     for group in force_algo.groups:
         group.is_bias = is_bias_group(group, force_algo)
+
+def group_compare(x, y):
+    '''
+    Sort groups by their group_id
+    groups on the low level with long IDs came first
+    '''
+    return len(y.group_id) - len(x.group_id)
+
+def find_special_groups(forceOptimizer, debug):
+    new_groups = []
+    for group in forceOptimizer.groups:
+        if len(group.blocks):
+
+            bias_blocks = []
+            for block in group.blocks:
+
+                for pin in block.pins.values():
+                    if pin.net.startswith("vbias"):
+
+                        bias_blocks.append(block)
+                        break
+            if len(bias_blocks) < len(group.blocks) and len(bias_blocks):
+                new_group_id = group.parent.group_id[:]
+                new_group_id.append(len(group.parent.childs))
+
+                new_group = Group(new_group_id)
+                if new_group not in new_groups:
+                    new_groups.append(new_group)
+                    new_group.parent = group.parent
+                    group.parent.childs.append(new_group)
+                    new_group.is_bias_connected = True
+
+                    for block in bias_blocks:
+                        block.groups = new_group_id
+                        group.blocks.remove(block)
+                        new_group.blocks.add(block)
+    for group in new_groups:
+        forceOptimizer.groups.append(group)
 
 def is_bias_group(group, forceOptimizer):
 
@@ -36,7 +84,55 @@ def is_bias_group(group, forceOptimizer):
     else:
         return False
 
+def find_special_pins (forceOptimizer, debug):
+    for group in forceOptimizer.groups:
+        group.connected_gnd = 0
+        group.connected_vcc = 0
+        group.connected_out = 0
+        group.connected_inp = 0
 
+        for block in group.blocks:
+            #check the connection to important pins
+            for p in block.pins.values():
+
+                for pin in forceOptimizer.pins_south:
+                    if p.net.lower().startswith(pin):
+                        group.connected_gnd += 1
+                        group.block_south.add(block)
+
+                for pin in forceOptimizer.pins_north:
+                    if p.net.lower().startswith(pin):
+                        group.connected_vcc += 1
+                        group.block_north.add(block)
+
+                for pin in forceOptimizer.pins_east:
+                    if p.net.lower().startswith(pin):
+                        group.connected_out += 1
+                        group.block_east.add(block)
+
+                for pin in forceOptimizer.pins_west:
+                    if p.net.lower().startswith(pin):
+                        group.block_west.add(block)
+
+                if p.net.lower().startswith("in"):
+                    group.connected_inp  #+= 1
+
+            if group.connected_out > 0:
+                group.connected_parent_east += group.connected_out
+            if group.connected_gnd > 0:
+                group.connected_parent_south += group.connected_gnd
+            if group.connected_vcc > 0:
+                group.connected_parent_north += group.connected_vcc
+
+        for child in group.childs:
+            group.connected_gnd += child.connected_gnd
+            group.connected_vcc += child.connected_vcc
+            group.connected_out += child.connected_out
+            group.connected_inp += child.connected_inp
+
+        group.connected_parent_east = group.connected_out
+        group.connected_parent_south = group.connected_gnd
+        group.connected_parent_north = group.connected_vcc
 def create_groups(forceOptimizer, debug=False):
     '''
     DESCRIPTION:   Create the groups and add them to the list: groups
@@ -74,44 +170,14 @@ def create_groups(forceOptimizer, debug=False):
             group.block_north.add(block);
             group.block_west.add(block)
 
-        #check the connection to important pins
-        for p in block.pins.values():
 
-            for pin in forceOptimizer.pins_south:
-                if p.net.lower().startswith(pin):
-                    group.connected_gnd += 1
-                    group.block_south.add(block)
-
-            for pin in forceOptimizer.pins_north:
-                if p.net.lower().startswith(pin):
-                    group.connected_vcc += 1
-                    group.block_north.add(block)
-
-            for pin in forceOptimizer.pins_east:
-                if p.net.lower().startswith(pin):
-                    group.connected_out += 1
-                    group.block_east.add(block)
-
-            for pin in forceOptimizer.pins_west:
-                if p.net.lower().startswith(pin):
-                    group.block_west.add(block)
-
-            if p.net.lower().startswith("in"):
-                group.connected_inp  #+= 1
-
-        if group.connected_out > 0:
-            group.connected_parent_east += group.connected_out
-        if group.connected_gnd > 0:
-            group.connected_parent_south += group.connected_gnd
-        if group.connected_vcc > 0:
-            group.connected_parent_north += group.connected_vcc
 
         #add the block to the low level group
         group.add_block(block)
 
         #if group has parents create them
-        if len(group_id) > 1:
-            create_parent(group,forceOptimizer, debug)
+        if len(group.group_id) > 1:
+            create_parent(group, forceOptimizer, debug)
         #else add group to main group
         else:
             forceOptimizer.group_main.add_child(group)

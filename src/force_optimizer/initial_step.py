@@ -9,6 +9,9 @@ def start(forceOptimizer, debug=False):
         print ""
 
     # the main group is the only group on the highest level, so the queue starts with her
+
+    forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare_negative)
+
     forceOptimizer.wide_search_queue.append(forceOptimizer.group_main)
 
     wide_search(forceOptimizer, debug)
@@ -30,6 +33,7 @@ def wide_search(forceOptimizer, debug):
     group = forceOptimizer.wide_search_queue.pop(0)
 
     if debug:
+        print ""
         print "Group ID:", group.group_id, " Count Group Childs: ", len(group.childs)
 
     if len(group.childs) == 0:
@@ -401,12 +405,12 @@ def calculate_groups_frame_position2(forceOptimizer, debug):
         print "========================================="
         print ""
 
+
+
+    forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
     if debug:
         for group in forceOptimizer.groups:
             print "Group:", group.group_id
-
-    forceOptimizer.groups = sorted(forceOptimizer.groups, cmp=group_compare)
-
     groups = forceOptimizer.groups[:]
     groups.append(forceOptimizer.group_main)
 
@@ -494,29 +498,37 @@ def calculate_groups_frame_position2(forceOptimizer, debug):
             # position of south childs
             south_heights = calculate_child_position_north_south(group, group.child_south, True, debug)
 
+            calculate_child_position_east_west(group, group.child_east, False, debug, north_heights)
 
-        if len(group.blocks):
+            calculate_child_position_east_west(group, group.child_west, True, debug, north_heights)
 
-            width_north += len(group.block_north)
-            width_south += len(group.block_south)
-            height_west += len(group.block_west)
-            height_east += len(group.block_east)
+            calculate_child_position_center(group, debug)
 
-            if debug:
-                print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
+        elif len(group.blocks):
+            if group.is_bias_connected:
+                group.size_height = 1
+                group.size_width = len(group.blocks)
+            else:
+                width_north += len(group.block_north)
+                width_south += len(group.block_south)
+                height_west += len(group.block_west)
+                height_east += len(group.block_east)
 
-            #the bigger width of north and south is the width for the group
-            group.size_width = max({width_north, width_south})
-            group.size_height = max({height_east, height_west})
-            # only for low level groups
-            if len(group.blocks) > 0:
-                group.size_height = group.size_height * 1
+                if debug:
+                    print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
 
-            #if the group area is to small to place all blocks without overlapping
-            while (group.size_height * group.size_width) < len(group.blocks):
-                #increment the group width and height by 1
-                #group.size_width = group.size_width + 1
-                group.size_height = group.size_height + 1
+                #the bigger width of north and south is the width for the group
+                group.size_width = max({width_north, width_south})
+                #group.size_height = max({height_east, height_west})
+                # only for low level groups
+                if len(group.blocks) > 0:
+                    group.size_height = group.size_height * 1
+
+                #if the group area is to small to place all blocks without overlapping
+                while (group.size_height * group.size_width) < len(group.blocks):
+                    #increment the group width and height by 1
+                    #group.size_width = group.size_width + 1
+                    group.size_height = group.size_height + 1
 
 
 
@@ -557,8 +569,40 @@ def east_west_child_update(group, east_west_childs, debug):
     for child in east_west_childs:
         child.size_width = group.size_width
 
+def calculate_child_position_center(group, debug):
+    center_childs = set(group.childs) - (set(group.child_north) | set(group.child_south) | set(group.child_east) | set(group.child_west))
 
 
+    for child in center_childs:
+        child.position_x = group.size_width - child.size_width
+        child.position_y = 0
+
+        for neighbor in child.neighbor_north:
+            if neighbor.position_x < child.position_x:
+                child.position_x = neighbor.position_x
+            if neighbor.position_y + neighbor.size_height > child.position_y:
+                child.position_y = neighbor.position_y + neighbor.size_height
+        if len(child.neighbor_north) == 0:
+            for neighbor in child.neighbor_south:
+                if neighbor.position_x < child.position_x:
+                    child.position_x = neighbor.position_x
+                if neighbor.position_y - child.size_height < child.position_y:
+                    child.position_y = neighbor.position_y + neighbor.size_height
+
+
+def calculate_child_position_east_west(group, group_border, is_west, debug, north_heights):
+    center_childs = set(group_border) - (set(group.child_north) | set(group.child_south))
+    north_y = max(north_heights[0], max(north_heights[1], north_heights[2]))
+    for child in center_childs:
+
+        if is_west:
+            child.position_x = 0
+        else:
+            child.position_x =  group.size_width - child.size_width
+
+        if child.position_y == -1:
+            child.position_y = north_y
+            north_y = child.position_y + child.size_height
 
 
 def calculate_child_position_north_south(group, group_border, is_south, debug):
