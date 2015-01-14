@@ -117,22 +117,22 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         #self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
 
-    def test_full_circ1(self):
-        self._full_simple("circuit_bi1_0op330_3.vhdl")
+    #def test_full_circ1(self):
+    #    self._full_simple("circuit_bi1_0op330_3.vhdl")
 
-    def test_full_circ2(self):
-        self._full_simple("circuit_bi1_0op336_4.vhdl")
+    #def test_full_circ2(self):
+    #    self._full_simple("circuit_bi1_0op336_4.vhdl")
 
     def test_full_circ3(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
 
-    def test_full_circ4(self):
-        self._full_simple("new/circuit_bi1_0op944_4.vhdl")
+    #def test_full_circ4(self):
+    #    self._full_simple("new/circuit_bi1_0op944_4.vhdl")
 
-    def test_all_testdata(self):
-        dn = "../../testdata/new/"
-        for fn in os.listdir(dn):
-            self._full_simple(os.path.join("new", fn), nocheck=True)
+    #def test_all_testdata(self):
+    #    dn = "../../testdata/new/"
+    #    for fn in os.listdir(dn):
+    #        self._full_simple(os.path.join("new", fn), nocheck=True)
 
 
 

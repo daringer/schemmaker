@@ -293,14 +293,14 @@ class Routing:
                     self.net_forbidden_pos[net].update(other_poses)
         
         for net, poses in nets.items():
-            if len(poses) < 2 and not net in ["vdd", "gnd"]: ### <- ???
-                continue
+            if len(poses) < 2: # or net in ["vdd", "gnd"]: ### <- ???
+                continue 
             
             # add additional "fake" open nets to "vdd" and "gnd" to force the router
             # to connect vdd/gnd blocks, which are not placed on top/bottom of the circuit
             connect_poses = poses[:]
             if net in ["vdd", "gnd"]:
-                target_y = 0 if net == "vdd" else self.field.ny*scaling
+                target_y = 0 if net == "vdd" else (self.field.ny*scaling-1)
                 for x, y in poses:
                     if y != target_y:
                         connect_poses.append((x, target_y))                        

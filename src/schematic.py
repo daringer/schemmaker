@@ -122,8 +122,9 @@ class Schematic:
         vdd_go, vdd_end = (top_min, 0), (top_max, 0)
 
         if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
-            canvas.draw_line_simple(vdd_go, vdd_end)
-            canvas.draw_line_simple(vss_go, vss_end)
+            #canvas.draw_line_simple(vdd_go, vdd_end)
+            #canvas.draw_line_simple(vss_go, vss_end)
+            pass
         
 
         # draw open-input dots 
