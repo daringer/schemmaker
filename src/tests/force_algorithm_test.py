@@ -129,10 +129,14 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
     #def test_full_circ4(self):
         #self._full_simple("new/circuit_bi1_0op944_4.vhdl")
 
-    #def test_all_testdata(self):
-        #dn = "../../testdata/new/"
-        #for fn in os.listdir(dn):
-            #self._full_simple(os.path.join("new", fn), nocheck=True)
+    def xtest_all_testdata(self):
+        dn = "../../testdata/new/"
+        for fn in sorted(os.listdir(dn)):
+            print "solving: ", fn
+            try:
+                self._full_simple(os.path.join("new", fn), nocheck=True)
+            except FieldBlockPosNotValid as e:
+                pass
 
 
 
