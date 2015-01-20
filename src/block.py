@@ -32,8 +32,8 @@ class Block(object):
     has_vdd = property(lambda s: any(p.supply for p in s.pins.values()))
     has_gnd = property(lambda s: any(p.gnd for p in s.pins.values()))
     is_biased = property(lambda s: any(p.biased for p in s.pins.values()))
-    input_nets = property(lambda s: set(p.blk_pos for p in s.pins.values() if p.input))
-    output_nets = property(lambda s: set(p.blk_pos for p in s.pins.values() if p.output))
+    input_nets = property(lambda s: set((p.net, p.blk_pos) for p in s.pins.values() if p.input))
+    output_nets = property(lambda s: set((p.net, p.blk_pos) for p in s.pins.values() if p.output))
 
     def __init__(self, b_type, pins=None, name=None, groups=None, size=(2, 2), parent=None):
         self.type = b_type

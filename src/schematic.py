@@ -37,6 +37,9 @@ class Schematic:
         # block -> position mapping
         block2pos = field.block2xy 
 
+        in_pins = []
+        out_pins = []
+
         # draw each block at its position
         for blk, pos in block2pos.items():
             b_type, rot, mir, size  = blk.type, blk.rotation, blk.mirrored, blk.size
@@ -81,11 +84,24 @@ class Schematic:
             elif b_type == "res":
                 canvas.r(pos, rot)
 
+            for p_pos, p in blk.pins.items():
+                mypos = (pos[0]+p.pos[0], pos[1]+p.pos[1])
+                if p.net.startswith("in"):
+                    in_pins.append((p.net, mypos, blk.get_pin_direction(p)))
+                elif p.net.startswith("out"):
+                    out_pins.append((p.net, mypos, blk.get_pin_direction(p)))
+
             # pin naming
             if net_names:
-                for pos, pin in blk.pins.items():
-                    canvas.draw_text(pin.blk_pos, pin.net, fontsize=6, weight=200)
+                for p_pos, pin in blk.pins.items():
+                    canvas.draw_text((pos[0] + pin.pos[0], pos[1] + pin.pos[1]), pin.net, fontsize=6, weight=200)
         
+
+        if len(out_pins) > 0:
+            pos = ((max(out_pins, key=lambda x: x[1][0])[1][0], 
+                    sum([x[1][1] for x in out_pins]) / len(out_pins)))
+            out_pins = [("out", pos, 3)]
+
         # draw groups 
         if field.grp2pos is not None:
             txtposes = set()
@@ -118,23 +134,27 @@ class Schematic:
             canvas.filled_dot(dot)
             
         # draw vdd and gnd line
-        #vss_go, vss_end = (bot_min, ny), (bot_max, ny)
-        #vdd_go, vdd_end = (top_min, 0), (top_max, 0)
+        vss_go, vss_end = (bot_min, ny), (bot_max, ny)
+        vdd_go, vdd_end = (top_min, 0), (top_max, 0)
 
-        #if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
-            #canvas.draw_line_simple(vdd_go, vdd_end)
+        if vdd_go is None or vdd_end is None or vss_go is None or vss_end is None:
+            canvas.draw_line_simple(vdd_go, vdd_end)
             #canvas.draw_line_simple(vss_go, vss_end)
-            #pass
+            pass
 
         # draw open-input dots 
-        for direction, pos, name in field.input_dots:
+        #for direction, (name, pos), name2 in field.input_dots:
+        for name, pos, direction in in_pins: 
             canvas.open_dot(pos, direction)
-            mod_x = (-0.13 if direction == 3 else (-0.1 - len(name) * 0.1))
-            canvas.draw_text((pos[0]+mod_x, pos[1]-0.4), name, fontsize=8, weight=600)
+            c1, c2,  m1, m2 = 0.05, -0.13, 0.07, 0.00
+            mod_x = c2 if direction == 3 else (-c1 - len(name) * m1)
+            name = name.upper().replace("1", "+").replace("2", "-")
+            canvas.draw_text((pos[0]+mod_x, pos[1]-0.2), name, fontsize=8, weight=600)
         
         # draw output pin or not, if no output available
-        if len(field.output_dots) > 0:
-            for direction, pos, name in field.output_dots:
+        #if len(field.output_dots) > 0:
+        if len(out_pins) > 0:
+            for name, pos, direction in out_pins:
                 outpos = pos
                 ## draw filled (soldering) dot and a wire/line to the right 
                 canvas.filled_dot(outpos)
@@ -143,7 +163,7 @@ class Schematic:
                 open_dot_point = (outpos[0] + 0.5, outpos[1])
                 canvas.open_dot(open_dot_point, 1)
                 ## draw label
-                canvas.draw_text((open_dot_point[0]+0.3, open_dot_point[1]), name, fontsize=8, weight=600)
+                canvas.draw_text((open_dot_point[0]+0.25, open_dot_point[1]+0.06), name.upper(), fontsize=8, weight=600)
         
         # draw wires, if available
         for wire in field.wires:

@@ -44,7 +44,7 @@ class DrawingArea:
         
         # draw gnd and vdd
         self.gnd((field.nx/2. - 1, field.ny-0.25), 0)
-        self.vdd((field.nx/2. - 1, -2.0), 0)  
+        self.vdd((field.nx/2. - 1, -1.75), 0)  
 
     def _get_device_draw_pos(self, pos, rot):
         """
@@ -219,7 +219,8 @@ class DrawingArea:
         pos, alpha = self._get_device_draw_pos(xy, rot)
 
         points = [
-            ((0, 2/7.), (0, 1.0)), ((0, -2/7.), (0, -1.0)),
+            ((0, 2/7.),   (0, 1.0)), 
+            ((0, -2/7.), (0, -1.0+(2/7.))),
             ((-2/7., 0), (2/7., 0))
         ]
         self.draw_lines(pos, points, alpha)

@@ -9,9 +9,9 @@ from force_optimizer import *
 from field import *
 from parsers.vhdl import parse_vhdl as parse
 from schematic import draw_field
-from routing import Routing
+from routing import Routing, RoutingException
 
-DEBUG = True
+DEBUG = False
 
 class ForceAlgorithmUnitTest(unittest.TestCase):
     # fixture setup, called BEFORE each test
@@ -79,7 +79,7 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
                 r = Routing(f)
                 ret = r.route(4)
                 fn = draw_field(f, "schematic_real_{}.pdf".format(cid))
-            except Exception as e:
+            except RoutingException as e:
                 if not nocheck:
                     print "failed with circuit {}".format(cid)
                     print "continuing due to 'nocheck' == True"
@@ -117,19 +117,19 @@ class ForceAlgorithmUnitTest(unittest.TestCase):
         #self.assertTrue(f.group_main.childs[0].are_neighbor(f.group_main.childs[1]))
 
 
-    #def test_full_circ1(self):
-        #self._full_simple("circuit_bi1_0op330_3.vhdl")
+    def test_full_circ1(self):
+        self._full_simple("circuit_bi1_0op330_3.vhdl")
 
-    #def test_full_circ2(self):
-        #self._full_simple("circuit_bi1_0op336_4.vhdl")
+    def test_full_circ2(self):
+        self._full_simple("circuit_bi1_0op336_4.vhdl")
 
     def test_full_circ3(self):
         self._full_simple("circuit_bi1_0op324_2.vhdl")
 
-    #def test_full_circ4(self):
-        #self._full_simple("new/circuit_bi1_0op944_4.vhdl")
+    def test_full_circ4(self):
+        self._full_simple("new/circuit_bi1_0op944_4.vhdl")
 
-    def xtest_all_testdata(self):
+    def test_all_testdata(self):
         dn = "../../testdata/new/"
         for fn in sorted(os.listdir(dn)):
             print "solving: ", fn

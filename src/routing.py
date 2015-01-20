@@ -215,6 +215,9 @@ class Routing:
                     
                     pos = self.scale_up(_pos, scaling)
                     
+                    #if pin.net == "vdd":
+                    #    pos = (pos[0], pos[1]-1)
+
                     if len(block.pins) == 3:
                         if block.get_pin_direction(pin) == 0:
                             pos = (pos[0], pos[1]+1)
@@ -224,6 +227,9 @@ class Routing:
                             pos = (pos[0], pos[1]-1)
                         else:
                             pos = (pos[0]-1, pos[1])
+                    elif len(block.pins) == 2:
+                        if block.get_pin_direction(pin) == 0:
+                            pos = (pos[0], pos[1]+2)
 
 
                     if pos not in pos_map:
@@ -300,7 +306,7 @@ class Routing:
             # to connect vdd/gnd blocks, which are not placed on top/bottom of the circuit
             connect_poses = poses[:]
             if net in ["vdd", "gnd"]:
-                target_y = 0 if net == "vdd" else (self.field.ny*scaling-1)
+                target_y = 1 if net == "vdd" else (self.field.ny*scaling-1)
                 for x, y in poses:
                     if y != target_y:
                         connect_poses.append((x, target_y))                        

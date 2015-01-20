@@ -369,24 +369,24 @@ class Field(object):
         self.block2yx[block] = (pos[1], pos[0])
 
         #self.output_nets.update(block.output_nets)
-        #for 
-
         #self.input_nets.update(block.input_nets)
-
+        
         # calc x: max(x-values) y: (sum of all y) / (num items)
-        if len(self.output_nets) > 0:
-            pos = ((max(self.output_nets, key=lambda x: x[0])[0], 
-                    sum([x[1] for x in self.output_nets]) / len(self.output_nets)))
-            self.output_dots.clear()
-            self.output_dots.add( (3, pos, "OUT") )
+        #if len(self.output_nets) > 0:
+        #    pos = ((max(self.output_nets, key=lambda x: x[1][0])[1][0], 
+        #            sum([x[1][1] for x in self.output_nets]) / len(self.output_nets)))
+        #    print "POOOOS: ", pos
 
-        assert all(len(x) == 3 for x in self.output_dots)
+        #    self.output_dots.clear()
+        #    self.output_dots.add( (1, ("out", pos), "<none>") )
 
-        if len(self.input_nets) > 0:
-            for pos in self.input_nets:
-                self.input_dots.add( (-1, pos, "IN?") )
+        #assert all(len(x) == 3 for x in self.output_dots)
 
-        assert all(len(x) == 3 for x in self.input_dots)
+        #if len(self.input_nets) > 0:
+        #    for name, pos in self.input_nets:
+        #        self.input_dots.add( (-1, (name, pos), "<none>") )
+
+        #assert all(len(x) == 3 for x in self.input_dots)
 
         return True
     
@@ -686,7 +686,7 @@ class Field(object):
                 self.remove_row(y)
 
     def optimize_block_dirs(self):
-        pos2pin = {}
+        net2pos = {}
         for b, (x, y) in self.block2xy.items():
             if b.type == "pmos":
                 b.rotate(2)
@@ -700,8 +700,23 @@ class Field(object):
                 b.mirror()
 
             for p_pos, p in b.pins.items():
-                pos2pin.setdefault(p_pos, []).append((p.net, p.blk_pos))
-        print pos2pin
+                net2pos.setdefault(p.net, []).append([
+                    (p.pos[0] + b.pos[0], p.pos[1] + b.pos[1]), 
+                    b.get_pin_direction(p), 
+                    p]
+                )
+
+        dirs = []
+        
+        inputs = []
+        for name, items in net2pos.items():
+            if name.startswith("in"):
+                inputs.append((name, items))
+        if len(inputs) == 2:
+            if inputs[0][1][0][0] == inputs[1][1][0][0]:
+                inputs[0][1][0][2].block.mirror()
+                inputs[1][1][0][2].block.mirror()
+
 
     def show_occ(self):
         """Show ascii art schematic, occupation based"""

@@ -9,12 +9,12 @@ class Pin(object):
     # absolute position 
     blk_pos = property(lambda s: (s.block.pos[0] + s.pos[0], s.block.pos[1] + s.pos[1]))
 
-    def __init__(self, parent, net_name, pos, horizontal=False, vertical=False, is_output=False, is_input=False):
+    def __init__(self, parent, net_name, pos, horizontal=False, vertical=False, is_output=None, is_input=None):
         self.net = net_name
         self.horizontal = horizontal
         self.vertical = vertical 
-        self.output = is_output 
-        self.input = is_input
+        self.output = net_name.startswith("out") if is_output is None else is_output
+        self.input = net_name.startswith("in") if is_input is None else is_input
         
         self.supply = net_name.lower() == "vdd"
         self.gnd = net_name.lower() in ["gnd", "vss"]
@@ -25,7 +25,7 @@ class Pin(object):
         self.pos = pos        
         
     def copy(self, parent):
-        return Pin(self, self.net, self.pos, self.horizontal, self.vertical)
+        return Pin(parent, self.net, self.pos, self.horizontal, self.vertical, self.output, self.input)
 
     def __repr__(self):
         return "({0[0]},{0[1]} - {1})".format(self.pos, self.net)
