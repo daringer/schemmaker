@@ -686,6 +686,7 @@ class Field(object):
                 self.remove_row(y)
 
     def optimize_block_dirs(self):
+        pos2pin = {}
         for b, (x, y) in self.block2xy.items():
             if b.type == "pmos":
                 b.rotate(2)
@@ -697,6 +698,10 @@ class Field(object):
             # all nmos, without 2 conns to the same net, mirror!
             if len(set(blk_nets)) == len(blk_nets) and b.type == "nmos":
                 b.mirror()
+
+            for p_pos, p in b.pins.items():
+                pos2pin.setdefault(p_pos, []).append((p.net, p.blk_pos))
+        print pos2pin
 
     def show_occ(self):
         """Show ascii art schematic, occupation based"""
