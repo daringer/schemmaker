@@ -127,7 +127,7 @@ class Schematic:
                 txtposes.add(txt_pos)
 
                 canvas.draw_box_simple((x_pos, y_pos), x_size, y_size, fill=fill, color=color, zorder=-100)
-                canvas.draw_text(txt_pos, gname, fontsize=6, weight=200*lvl**2)
+                canvas.draw_text(txt_pos, gname, fontsize=6, weight=min(600, 200*lvl**2))
 
         # drawing dots 
         for dot in field.wire_dots:
