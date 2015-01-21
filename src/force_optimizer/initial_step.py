@@ -48,12 +48,21 @@ def wide_search(forceOptimizer, debug):
         for child in group.childs:
             if debug:
                 print str(child.group_id) + " Connected to parent's east neighbor:" + str(child.connected_parent_east)
+                print child
+                print child.parent
             if child.connected_parent_east > 0:
                 if start_child is None:
                     start_child = child
                     queue.insert(0, start_child)
                 else:
                     queue.append(child)
+            else:
+                if len(group.childs) == 1:
+                    if start_child is None:
+                        start_child = child
+                        queue.insert(0, start_child)
+                    else:
+                        queue.append(child)
 
         if debug:
             print "Start Child:", start_child.group_id
@@ -128,6 +137,7 @@ def sort_extern_neighbors(east_list, debug, forceOptimizer):
             print "Group PArent Neighbor NORTH count:", len(group.parent.neighbor_north)
             for neigh in group.parent.neighbor_north:
                 print "    ", neigh.group_id
+            print ""
 
         for neighbor in group.neighbor_extern:
 
@@ -148,6 +158,7 @@ def sort_extern_neighbors(east_list, debug, forceOptimizer):
             print "Group connected parent west:", group.connected_parent_west
             print "Group connected parent south:", group.connected_parent_south
             print "Group connected parent north:", group.connected_parent_north
+            print ""
 
 def find_blocks(group, neighbor, orientation, debug):
     if debug:
@@ -509,10 +520,12 @@ def calculate_groups_frame_position2(forceOptimizer, debug):
                 group.size_height = 1
                 group.size_width = len(group.blocks)
             else:
+                east_blocks = set(group.block_east) - (set(group.block_north) | set(group.block_south) )
+                west_blocks = set(group.block_west) - (set(group.block_north) | set(group.block_south) )
                 width_north += len(group.block_north)
                 width_south += len(group.block_south)
-                height_west += len(group.block_west)
-                height_east += len(group.block_east)
+                height_west += len(west_blocks)
+                height_east += len(east_blocks)
 
                 if debug:
                     print "Group:", group.group_id, "North:", width_north, "South:", width_south, "East:", height_east, "West:", height_west
@@ -1060,6 +1073,7 @@ def add_neighbor_north_south( group_north, group_south):
 def add_neighbor_east_west( group_east, group_west):
     '''
     '''
+
     group_east.neighbor_west.append(group_west)
     if group_west in group_east.neighbor_unsorted:
         group_east.neighbor_unsorted.remove(group_west)

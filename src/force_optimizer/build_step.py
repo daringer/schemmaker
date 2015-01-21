@@ -38,10 +38,13 @@ def group_compare(x, y):
 
 def find_special_groups(forceOptimizer, debug):
     new_groups = []
+    new_level = 0
     for group in forceOptimizer.groups:
         if len(group.blocks):
 
             bias_blocks = []
+            in_blocks = []
+
             for block in group.blocks:
 
                 for pin in block.pins.values():
@@ -49,6 +52,43 @@ def find_special_groups(forceOptimizer, debug):
 
                         bias_blocks.append(block)
                         break
+                    if pin.net.startswith("in"):
+                        in_blocks.append(block)
+
+
+            if len(bias_blocks) < len(group.blocks) and len(bias_blocks):
+                new_group_id = group.group_id[:]
+                new_group_id.append(len(group.childs))
+
+                new_group = Group(new_group_id)
+                if new_group not in new_groups:
+                    new_level = len(new_group_id)
+                    new_groups.append(new_group)
+                    new_group.parent = group
+                    group.childs.append(new_group)
+                    new_group.is_bias_connected = True
+
+                    for block in bias_blocks:
+                        block.groups = new_group_id
+                        group.blocks.remove(block)
+                        new_group.blocks.add(block)
+
+            if len(in_blocks) and len(in_blocks)< len(group.blocks):
+                new_group_id = group.group_id[:]
+                new_group_id.append(len(group.childs))
+
+                new_group = Group(new_group_id)
+                if new_group not in new_groups:
+                    new_level = len(new_group_id)
+                    new_groups.append(new_group)
+                    new_group.parent = group
+                    group.childs.append(new_group)
+
+                    for block in in_blocks:
+                        block.groups = new_group_id
+                        group.blocks.remove(block)
+                        new_group.blocks.add(block)
+            '''
             if len(bias_blocks) < len(group.blocks) and len(bias_blocks):
                 new_group_id = group.parent.group_id[:]
                 new_group_id.append(len(group.parent.childs))
@@ -64,6 +104,49 @@ def find_special_groups(forceOptimizer, debug):
                         block.groups = new_group_id
                         group.blocks.remove(block)
                         new_group.blocks.add(block)
+
+            if len(in_blocks) and len(in_blocks)< len(group.blocks):
+                new_group_id = group.parent.group_id[:]
+                new_group_id.append(len(group.parent.childs))
+
+                new_group = Group(new_group_id)
+                if new_group not in new_groups:
+                    new_groups.append(new_group)
+                    new_group.parent = group.parent
+                    group.parent.childs.append(new_group)
+                    new_group.is_bias_connected = True
+
+                    for block in in_blocks:
+                        block.groups = new_group_id
+                        group.blocks.remove(block)
+                        new_group.blocks.add(block)
+            '''
+    if new_level:
+        for group in forceOptimizer.groups:
+            if len(group.group_id) == new_level - 1:
+
+
+
+
+
+                if len(group.blocks):
+
+                    new_group_id = group.group_id[:]
+                    new_group_id.append(len(group.childs))
+                    new_group = Group(new_group_id)
+
+                    if new_group not in new_groups:
+
+                        new_groups.append(new_group)
+                        new_group.parent = group
+                        group.childs.append(new_group)
+                        blocks = list(group.blocks)
+
+                        for block in blocks:
+                            print block.name
+                            block.groups = new_group_id[:]
+                            group.blocks.remove(block)
+                            new_group.blocks.add(block)
     for group in new_groups:
         forceOptimizer.groups.append(group)
 

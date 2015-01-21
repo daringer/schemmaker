@@ -22,7 +22,7 @@ def start (forceOptimizer, debug=False):
         columns = list(repeat(0,freeField_width))
 
 
-
+        '''
         for block in group.block_north:
             rows[block.pos[1]] += 1
 
@@ -63,22 +63,23 @@ def start (forceOptimizer, debug=False):
             print ""
             print "columns of group:", group.group_id
             print columns
+        '''
 
         blocks_old_position={}
-
+        '''
         for block in group.blocks:
             blocks_old_position[block] = [block.pos[0], block.pos[1]]
             if block not in group.block_north and block not in group.block_south and block not in group.block_east and block not in group.block_west:
                 inner_blocks.append(block)
-
-        inner_blocks = sorted(inner_blocks, cmp=block_compare_y)
+        '''
+        blocks = sorted(group.blocks, cmp=block_compare_y)
         if debug:
             print ""
 
 
 
         # row
-        for block in inner_blocks:
+        for block in blocks:
 
 
 
@@ -115,12 +116,12 @@ def start (forceOptimizer, debug=False):
             if debug:
                 print "Block:", block.name, " y:",block.pos[1]
 
-        inner_blocks = sorted(inner_blocks, cmp=block_compare_x)
+        blocks = sorted(group.blocks, cmp=block_compare_x)
         if debug:
             print ""
 
         #  colum
-        for block in inner_blocks:
+        for block in blocks:
 
             new_x = int(round(block.pos[0]))
             if debug:
