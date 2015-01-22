@@ -55,7 +55,7 @@ def find_special_groups(forceOptimizer, debug):
                     if pin.net.startswith("in"):
                         in_blocks.append(block)
 
-
+            '''
             if len(bias_blocks) < len(group.blocks) and len(bias_blocks):
                 new_group_id = group.group_id[:]
                 new_group_id.append(len(group.childs))
@@ -120,7 +120,7 @@ def find_special_groups(forceOptimizer, debug):
                         block.groups = new_group_id
                         group.blocks.remove(block)
                         new_group.blocks.add(block)
-            '''
+
     if new_level:
         for group in forceOptimizer.groups:
             if len(group.group_id) == new_level - 1:
